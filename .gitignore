@@ -6,3 +6,7 @@ node_modules/
 dist/
 build/
 .vscode/*.local
+
+
+#Ignore vscode AI rules
+.github\instructions\codacy.instructions.md
