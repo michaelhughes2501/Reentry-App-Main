@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReentryApp — The Yard</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f4f4f8; color: #1a1a2e; }
+    header { background: #1a1a2e; color: white; padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 1.4rem; }
+    nav { display: flex; gap: 1rem; }
+    nav button { background: transparent; border: 1px solid rgba(255,255,255,0.3); color: white; padding: 0.4rem 1rem; border-radius: 20px; cursor: pointer; font-size: 0.85rem; transition: background 0.2s; }
+    nav button:hover, nav button.active { background: rgba(255,255,255,0.15); }
+    main { max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    h2 { font-size: 1.5rem; margin-bottom: 1rem; color: #1a1a2e; }
+    .card { background: white; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .card h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+    .card p { font-size: 0.875rem; color: #555; }
+    .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+    .badge-green { background: #d4edda; color: #155724; }
+    .badge-yellow { background: #fff3cd; color: #856404; }
+    .badge-blue { background: #cce5ff; color: #004085; }
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem; }
+    select, textarea { width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 8px; font-size: 0.9rem; }
+    .btn { background: #1a1a2e; color: white; border: none; padding: 0.7rem 1.5rem; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600; }
+    .btn:hover { background: #2d2d4e; }
+    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+    .status-online { background: #28a745; }
+    .status-available { background: #007bff; }
+    .status-in_roll_call { background: #ffc107; }
+    #status-bar { background: #e8f4f8; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.5rem; font-size: 0.875rem; color: #0c5460; }
+    .kite-form { background: white; border-radius: 12px; padding: 1.25rem; margin-top: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    #kite-status { margin-top: 0.5rem; font-size: 0.85rem; min-height: 1.2em; }
+    .risk-high { color: #dc3545; font-weight: 600; }
+    .risk-low { color: #28a745; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>&#x1F3DB; The Yard</h1>
+    <nav>
+      <button class="active" onclick="showPanel('yard', this)">The Yard</button>
+      <button onclick="showPanel('commissary', this)">Commissary</button>
+      <button onclick="showPanel('kites', this)">Kites</button>
+      <button onclick="showPanel('rollcall', this)">Roll Call</button>
+    </nav>
+  </header>
+
+  <main>
+    <div id="status-bar">Loading&#x2026;</div>
+
+    <!-- The Yard -->
+    <div id="yard" class="panel active">
+      <h2>The Yard &#x2014; Community</h2>
+      <div id="residents-list">Loading residents&#x2026;</div>
+    </div>
+
+    <!-- Commissary -->
+    <div id="commissary" class="panel">
+      <h2>Commissary &#x2014; Resources</h2>
+      <div id="resources-list">Loading resources&#x2026;</div>
+    </div>
+
+    <!-- Kites (Messages) -->
+    <div id="kites" class="panel">
+      <h2>Kites &#x2014; Send a Message</h2>
+      <div class="kite-form">
+        <div class="form-group">
+          <label for="kite-from">From (Resident)</label>
+          <select id="kite-from"></select>
+        </div>
+        <div class="form-group">
+          <label for="kite-to">To (Resident)</label>
+          <select id="kite-to"></select>
+        </div>
+        <div class="form-group">
+          <label for="kite-body">Message (Kite)</label>
+          <textarea id="kite-body" rows="4" placeholder="Write your kite&#x2026; (max 1000 chars)" maxlength="1000"></textarea>
+        </div>
+        <button class="btn" onclick="sendKite()">Send Kite</button>
+        <div id="kite-status"></div>
+      </div>
+      <div id="kite-history" style="margin-top:1.5rem;"></div>
+    </div>
+
+    <!-- Roll Call -->
+    <div id="rollcall" class="panel">
+      <h2>Roll Call &#x2014; Check In</h2>
+      <div class="kite-form">
+        <div class="form-group">
+          <label for="rc-resident">Resident</label>
+          <select id="rc-resident"></select>
+        </div>
+        <div class="form-group">
+          <label for="rc-status">Wellness Status</label>
+          <select id="rc-status">
+            <option value="steady">Steady</option>
+            <option value="needs_support">Needs Support</option>
+            <option value="urgent">Urgent</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="rc-note">Support Note (optional)</label>
+          <textarea id="rc-note" rows="2" placeholder="Any support needs?"></textarea>
+        </div>
+        <button class="btn" onclick="submitRollCall()">Check In</button>
+        <div id="rc-status-msg"></div>
+      </div>
+      <div id="rollcall-log" style="margin-top:1.5rem;"></div>
+    </div>
+  </main>
+
+  <script>
+    const API = '/api'
+    let residents = []
+
+    function showPanel(name, btn) {
+      document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active') })
+      document.querySelectorAll('nav button').forEach(function(b) { b.classList.remove('active') })
+      document.getElementById(name).classList.add('active')
+      if (btn) btn.classList.add('active')
+    }
+
+    async function fetchStatus() {
+      try {
+        const r = await fetch(API + '/status')
+        const json = await r.json()
+        const d = json.data
+        document.getElementById('status-bar').textContent = '✅ ' + d.app + ' is running — Modules: ' + d.modules.join(', ')
+      } catch (e) {
+        document.getElementById('status-bar').textContent = 'Server status unknown'
+      }
+    }
+
+    async function loadYard() {
+      try {
+        const r = await fetch(API + '/community')
+        const json = await r.json()
+        residents = json.data.residents
+        populateResidentSelects()
+        document.getElementById('residents-list').innerHTML = residents.map(function(res) {
+          return '<div class="card">' +
+            '<h3><span class="status-dot status-' + res.status + '"></span>' + res.displayName + ' <span class="badge badge-blue">Tier ' + res.tier + '</span></h3>' +
+            '<p>📋 ' + res.programGoal + '</p>' +
+            '<p style="margin-top:0.5rem">⭐ ' + res.goodTimeCredits + ' good-time credits &nbsp;|&nbsp; 👮 ' + res.caseManagerName + '</p>' +
+            '<p style="margin-top:0.5rem;font-style:italic;color:#666">"' + res.compatibilityNote + '"</p>' +
+            '</div>'
+        }).join('')
+      } catch (e) {
+        document.getElementById('residents-list').innerHTML = '<p>Could not load residents.</p>'
+      }
+    }
+
+    async function loadCommissary() {
+      try {
+        const r = await fetch(API + '/resources')
+        const json = await r.json()
+        document.getElementById('resources-list').innerHTML = json.data.resources.map(function(res) {
+          return '<div class="card">' +
+            '<h3>' + res.title + ' <span class="badge badge-green">' + res.format + '</span></h3>' +
+            '<p>📂 ' + res.displayArea + ' &nbsp;|&nbsp; 🔖 Saved by ' + res.savedCount + ' residents</p>' +
+            '</div>'
+        }).join('')
+      } catch (e) {
+        document.getElementById('resources-list').innerHTML = '<p>Could not load resources.</p>'
+      }
+    }
+
+    async function loadKiteHistory() {
+      try {
+        const r = await fetch(API + '/messages')
+        const json = await r.json()
+        const msgs = json.data.messages
+        if (!msgs.length) {
+          document.getElementById('kite-history').innerHTML = '<p style="color:#888">No kites sent yet.</p>'
+          return
+        }
+        document.getElementById('kite-history').innerHTML = '<h3 style="margin-bottom:0.75rem">Sent Kites</h3>' + msgs.map(function(m) {
+          return '<div class="card">' +
+            '<p><strong>' + m.senderId + '</strong> → <strong>' + m.recipientId + '</strong></p>' +
+            '<p style="margin-top:0.5rem">' + m.body + '</p>' +
+            '<p style="margin-top:0.5rem;font-size:0.8rem;color:#888">Risk: <span class="' + (m.moderation.riskScore > 60 ? 'risk-high' : 'risk-low') + '">' + m.moderation.riskScore + '</span> &nbsp;|&nbsp; Status: ' + m.deliveryStatus + '</p>' +
+            '</div>'
+        }).join('')
+      } catch (e) {}
+    }
+
+    function populateResidentSelects() {
+      const opts = residents.map(function(r) {
+        return '<option value="' + r.id + '">' + r.displayName + ' (' + r.cohortName + ')</option>'
+      }).join('')
+      ;['kite-from', 'kite-to', 'rc-resident'].forEach(function(id) {
+        const el = document.getElementById(id)
+        if (el) el.innerHTML = opts
+      })
+    }
+
+    async function sendKite() {
+      const senderId = document.getElementById('kite-from').value
+      const recipientId = document.getElementById('kite-to').value
+      const body = document.getElementById('kite-body').value.trim()
+      const statusEl = document.getElementById('kite-status')
+      if (!body) { statusEl.textContent = 'Write a message first.'; return }
+      try {
+        const r = await fetch(API + '/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ senderId: senderId, recipientId: recipientId, body: body })
+        })
+        const json = await r.json()
+        document.getElementById('kite-body').value = ''
+        if (json.data.deliveryStatus === 'approved') {
+          statusEl.innerHTML = '<span class="risk-low">✅ Kite delivered.</span>'
+        } else {
+          statusEl.innerHTML = '<span class="risk-high">⚠️ Kite sent to Mail Room for review.</span>'
+        }
+        loadKiteHistory()
+      } catch (e) {
+        statusEl.textContent = 'Failed to send kite.'
+      }
+    }
+
+    async function submitRollCall() {
+      const participantId = document.getElementById('rc-resident').value
+      const wellnessStatus = document.getElementById('rc-status').value
+      const supportNeed = document.getElementById('rc-note').value
+      const msg = document.getElementById('rc-status-msg')
+      try {
+        const r = await fetch(API + '/roll-call', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ participantId: participantId, wellnessStatus: wellnessStatus, supportNeed: supportNeed })
+        })
+        await r.json()
+        msg.innerHTML = '<span style="color:#28a745">✅ Roll call recorded.</span>'
+        document.getElementById('rc-note').value = ''
+        loadRollCall()
+      } catch (e) {
+        msg.textContent = 'Check-in failed.'
+      }
+    }
+
+    async function loadRollCall() {
+      try {
+        const r = await fetch(API + '/roll-call')
+        const json = await r.json()
+        const entries = json.data.latest
+        if (entries.length) {
+          document.getElementById('rollcall-log').innerHTML = '<h3 style="margin-bottom:0.75rem">Recent Check-ins</h3>' + entries.map(function(e) {
+            return '<div class="card"><p><strong>' + e.participantId + '</strong> — ' + e.wellnessStatus + (e.supportNeed ? ' — ' + e.supportNeed : '') + '</p><p style="font-size:0.8rem;color:#888">' + new Date(e.createdAt).toLocaleString() + '</p></div>'
+          }).join('')
+        } else {
+          document.getElementById('rollcall-log').innerHTML = ''
+        }
+      } catch (e) {}
+    }
+
+    fetchStatus()
+    loadYard()
+    loadCommissary()
+    loadKiteHistory()
+    loadRollCall()
+  </script>
+</body>
+</html>

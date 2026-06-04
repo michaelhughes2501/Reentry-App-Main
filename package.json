@@ -14,6 +14,7 @@
   "type": "commonjs",
   "license": "ISC",
   "dependencies": {
+    "@supabase/supabase-js": "^2.48.1",
     "dotenv": "^17.0.0",
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.1",

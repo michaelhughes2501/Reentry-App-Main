@@ -1,3 +1,5 @@
+require('dotenv').config();
+const crypto = require('crypto');
 const express = require('express');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -5,107 +7,19 @@ const cors = require('cors');
 const hpp = require('hpp');
 const path = require('path');
 const { body, validationResult } = require('express-validator');
-require('dotenv').config();
+const { createClient } = require('@supabase/supabase-js');
 
 const appVersion = 'v1';
 
-const participants = [
-  {
-    id: 'res-101',
-    displayName: 'Marcus J.',
-    cohortName: 'North Unit',
-    tier: 4,
-    status: 'online',
-    programGoal: 'Stable housing and peer mentorship',
-    interests: ['housing', 'peer support', 'job readiness'],
-    goodTimeCredits: 184,
-    caseManagerName: 'PO Ellis',
-    compatibilityNote: 'Shared focus on housing stability and steady check-ins.'
-  },
-  {
-    id: 'res-204',
-    displayName: 'Tanya R.',
-    cohortName: 'East Unit',
-    tier: 3,
-    status: 'in_roll_call',
-    programGoal: 'Family reunification and employment',
-    interests: ['family', 'work detail', 'transportation'],
-    goodTimeCredits: 142,
-    caseManagerName: 'PO Rivera',
-    compatibilityNote: 'Similar reentry goals and strong Roll Call consistency.'
-  },
-  {
-    id: 'res-319',
-    displayName: 'Devon K.',
-    cohortName: 'South Unit',
-    tier: 5,
-    status: 'available',
-    programGoal: 'Education plan and wellness routine',
-    interests: ['law library', 'rec yard', 'education'],
-    goodTimeCredits: 221,
-    caseManagerName: 'PO Shah',
-    compatibilityNote: 'Aligned learning goals and positive group participation.'
-  }
-];
+// Validate environment variables
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+  console.warn('WARNING: SUPABASE_URL or SUPABASE_ANON_KEY is missing from .env');
+}
 
-const resources = [
-  {
-    id: 'resource-01',
-    title: 'Housing appointment checklist',
-    category: 'Commissary',
-    displayArea: 'Commissary',
-    format: 'PDF',
-    savedCount: 38
-  },
-  {
-    id: 'resource-02',
-    title: 'Resume clinic sign-up',
-    category: 'Employment',
-    displayArea: 'Work Detail',
-    format: 'Form',
-    savedCount: 27
-  },
-  {
-    id: 'resource-03',
-    title: 'Record relief intake guide',
-    category: 'Legal',
-    displayArea: 'Law Library',
-    format: 'Article',
-    savedCount: 19
-  },
-  {
-    id: 'resource-04',
-    title: 'Grounding practice audio',
-    category: 'Wellness',
-    displayArea: 'Rec Yard',
-    format: 'Audio',
-    savedCount: 44
-  }
-];
-
-const moderationQueue = [
-  {
-    id: 'review-701',
-    sourceType: 'message',
-    submittedBy: 'res-101',
-    riskScore: 42,
-    status: 'pending',
-    displayArea: 'Mail Room',
-    reason: 'Needs staff review before delivery.'
-  }
-];
-
-const rollCallLog = [
-  {
-    id: 'roll-001',
-    participantId: 'res-204',
-    wellnessStatus: 'steady',
-    supportNeed: 'transportation reminder',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString()
-  }
-];
-
-const messages = [];
+// Initialize default Supabase client with placeholders if env vars are missing to prevent crash during testing
+const supabaseUrl = process.env.SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseKey = process.env.SUPABASE_ANON_KEY || 'placeholder';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 function createMeta(req) {
   return {
@@ -184,8 +98,26 @@ function validateRequest(req, res, next) {
   });
 }
 
-function createApp() {
+function createApp(dbClient = supabase) {
   const app = express();
+
+  // Middleware to verify Supabase JWT
+  const authenticate = async (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return sendError(req, res, 401, 'UNAUTHORIZED', 'Bearer token required.');
+    }
+
+    const token = authHeader.split(' ')[1];
+    const { data: { user }, error } = await dbClient.auth.getUser(token);
+
+    if (error || !user) {
+      return sendError(req, res, 401, 'UNAUTHORIZED', 'Session invalid or expired.');
+    }
+
+    req.user = user; // Attach user to request for use in routes
+    next();
+  };
 
   app.use((req, res, next) => {
     req.requestId = `req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
@@ -224,7 +156,8 @@ function createApp() {
     legacyHeaders: false
   });
 
-  app.use('/api', limiter);
+  // Apply authentication and rate limiting to all /api routes
+  app.use('/api', authenticate, limiter);
   app.use(express.static(path.join(__dirname, 'public')));
 
   app.get('/api/status', (req, res) => {
@@ -236,13 +169,21 @@ function createApp() {
     });
   });
 
-  app.get('/api/community', (req, res) => {
+  app.get('/api/community', async (req, res) => {
+    // Example: Fetching residents from Supabase 'participants' table
+    const { data: residents, error } = await dbClient
+      .from('participants')
+      .select('*');
+
+    if (error) {
+      return sendError(req, res, 500, 'DATABASE_ERROR', error.message);
+    }
+
     sendSuccess(req, res, {
       displayArea: 'The Yard',
-      residents: participants,
-      leaderboard: participants
-        .map(({ id, displayName, goodTimeCredits }) => ({ id, displayName, goodTimeCredits }))
-        .sort((a, b) => b.goodTimeCredits - a.goodTimeCredits),
+      residents: residents || [],
+      leaderboard: (residents || [])
+        .sort((a, b) => (b.goodTimeCredits || 0) - (a.goodTimeCredits || 0)),
       activeBlocks: [
         { id: 'block-housing', name: 'Housing Readiness', residentCount: 18 },
         { id: 'block-work', name: 'Work Detail Prep', residentCount: 24 },
@@ -251,25 +192,77 @@ function createApp() {
     });
   });
 
-  app.get('/api/resources', (req, res) => {
+  app.get('/api/resources', async (req, res) => {
+    const { data, error } = await dbClient
+      .from('resources')
+      .select('*');
+
+    if (error) {
+      return sendError(req, res, 500, 'DATABASE_ERROR', error.message);
+    }
+
     sendSuccess(req, res, {
       displayArea: 'Commissary',
-      resources
+      resources: data || []
     });
   });
 
-  app.get('/api/moderation/queue', (req, res) => {
+  app.get('/api/moderation/queue', async (req, res) => {
+    const { data, error } = await dbClient
+      .from('moderation_queue')
+      .select('*')
+      .order('createdAt', { ascending: false });
+
+    if (error) {
+      return sendError(req, res, 500, 'DATABASE_ERROR', error.message);
+    }
+
     sendSuccess(req, res, {
       displayArea: 'Mail Room',
-      pendingCount: moderationQueue.filter((item) => item.status === 'pending').length,
-      items: moderationQueue
+      pendingCount: (data || []).filter((item) => item.status === 'pending').length,
+      items: data || []
     });
   });
 
-  app.get('/api/roll-call', (req, res) => {
+  app.put(
+    '/api/moderation/queue/:id',
+    [
+      body('status').isIn(['approved', 'rejected']).withMessage('Status must be approved or rejected.')
+    ],
+    validateRequest,
+    async (req, res) => {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      const { data, error } = await dbClient
+        .from('moderation_queue')
+        .update({ status })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        return sendError(req, res, 500, 'DATABASE_ERROR', error.message);
+      }
+
+      if (!data) return sendError(req, res, 404, 'NOT_FOUND', 'Moderation item not found.');
+
+      sendSuccess(req, res, data);
+    }
+  );
+
+  app.get('/api/roll-call', async (req, res) => {
+    const { data, error } = await dbClient
+      .from('roll_call_log')
+      .select('*')
+      .order('createdAt', { ascending: false })
+      .limit(5);
+
+    if (error) return sendError(req, res, 500, 'DATABASE_ERROR', error.message);
+
     sendSuccess(req, res, {
       displayArea: 'Roll Call',
-      latest: rollCallLog.slice(-5).reverse()
+      latest: data || []
     });
   });
 
@@ -281,9 +274,14 @@ function createApp() {
       body('supportNeed').optional({ values: 'falsy' }).isString().trim().isLength({ max: 500 }).withMessage('Keep support notes under 500 characters.')
     ],
     validateRequest,
-    (req, res) => {
-      const resident = participants.find((participant) => participant.id === req.body.participantId);
-      if (!resident) {
+    async (req, res) => {
+      const { data: resident, error: checkError } = await dbClient
+        .from('participants')
+        .select('id')
+        .eq('id', req.body.participantId)
+        .single();
+
+      if (checkError || !resident) {
         sendError(req, res, 404, 'RESIDENT_NOT_FOUND', 'That Resident could not be found.', {
           participantId: req.body.participantId
         });
@@ -291,14 +289,19 @@ function createApp() {
       }
 
       const entry = {
-        id: `roll-${Date.now()}`,
+        id: crypto.randomUUID(),
         participantId: resident.id,
         wellnessStatus: req.body.wellnessStatus,
         supportNeed: req.body.supportNeed || '',
         createdAt: new Date().toISOString()
       };
 
-      rollCallLog.push(entry);
+      const { error: insertError } = await dbClient.from('roll_call_log').insert(entry);
+
+      if (insertError) {
+        return sendError(req, res, 500, 'DATABASE_ERROR', insertError.message);
+      }
+
       sendSuccess(req, res, entry, 201);
     }
   );
@@ -311,9 +314,14 @@ function createApp() {
       body('body').isString().trim().isLength({ min: 1, max: 1000 }).withMessage('Kites must be 1 to 1000 characters.')
     ],
     validateRequest,
-    (req, res) => {
-      const sender = participants.find((participant) => participant.id === req.body.senderId);
-      const recipient = participants.find((participant) => participant.id === req.body.recipientId);
+    async (req, res) => {
+      const { data: actors, error: actorsError } = await dbClient
+        .from('participants')
+        .select('id')
+        .in('id', [req.body.senderId, req.body.recipientId]);
+
+      const sender = actors?.find(a => a.id === req.body.senderId);
+      const recipient = actors?.find(a => a.id === req.body.recipientId);
 
       if (!sender || !recipient) {
         sendError(req, res, 404, 'RESIDENT_NOT_FOUND', 'Sender or recipient could not be found.', {
@@ -325,7 +333,7 @@ function createApp() {
 
       const scan = moderationScan(req.body.body);
       const message = {
-        id: `kite-${Date.now()}`,
+        id: crypto.randomUUID(),
         senderId: sender.id,
         recipientId: recipient.id,
         body: req.body.body,
@@ -334,11 +342,14 @@ function createApp() {
         createdAt: new Date().toISOString()
       };
 
-      messages.push(message);
+      const { error: msgError } = await dbClient.from('messages').insert(message);
+      if (msgError) {
+        return sendError(req, res, 500, 'DATABASE_ERROR', msgError.message);
+      }
 
       if (scan.action === 'requires_review') {
-        moderationQueue.push({
-          id: `review-${Date.now()}`,
+        const { error: revError } = await dbClient.from('moderation_queue').insert({
+          id: crypto.randomUUID(),
           sourceType: 'message',
           submittedBy: sender.id,
           riskScore: scan.riskScore,
@@ -352,10 +363,17 @@ function createApp() {
     }
   );
 
-  app.get('/api/messages', (req, res) => {
+  app.get('/api/messages', async (req, res) => {
+    const { data, error } = await dbClient
+      .from('messages')
+      .select('*')
+      .order('createdAt', { ascending: false });
+
+    if (error) return sendError(req, res, 500, 'DATABASE_ERROR', error.message);
+
     sendSuccess(req, res, {
       displayArea: 'Kites',
-      messages
+      messages: data || []
     });
   });
 
@@ -363,7 +381,7 @@ function createApp() {
     sendError(req, res, 404, 'NOT_FOUND', 'That API route is not available.');
   });
 
-  app.get('*', (req, res) => {
+  app.get('(.*)', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
   });
 
