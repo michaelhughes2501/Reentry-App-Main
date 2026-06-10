@@ -520,7 +520,6 @@ ul { list-style: none; }
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(var(--card-accent), 0.12);
   background: color-mix(in srgb, var(--card-accent) 12%, transparent);
   margin-bottom: 1.25rem;
   color: var(--card-accent);

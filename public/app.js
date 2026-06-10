@@ -5,20 +5,26 @@
 (function () {
   'use strict';
 
-  /* ── Sticky nav ── */
+  /* ── Sticky nav — only touch the DOM when the scrolled state changes ── */
   var nav = document.getElementById('site-nav');
   if (nav) {
+    var isScrolled = false;
     window.addEventListener('scroll', function () {
-      nav.classList.toggle('scrolled', window.scrollY > 20);
+      var scrolled = window.scrollY > 20;
+      if (scrolled !== isScrolled) {
+        isScrolled = scrolled;
+        nav.classList.toggle('scrolled', scrolled);
+      }
     }, { passive: true });
   }
 
-  /* ── Mobile nav toggle ── */
+  /* ── Mobile nav toggle (with aria-expanded for screen readers) ── */
   var navToggle = document.querySelector('.nav-toggle');
   var navMobile = document.getElementById('nav-mobile');
   if (navToggle && navMobile) {
     navToggle.addEventListener('click', function () {
-      navMobile.classList.toggle('open');
+      var open = navMobile.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', String(open));
     });
   }
 
@@ -27,16 +33,18 @@
     navMobile.querySelectorAll('a').forEach(function (a) {
       a.addEventListener('click', function () {
         navMobile.classList.remove('open');
+        if (navToggle) navToggle.setAttribute('aria-expanded', 'false');
       });
     });
   }
 
-  /* ── Smooth scroll for all in-page anchor links ── */
+  /* ── Smooth scroll for in-page anchor links ──
+     getElementById avoids DOMExceptions from IDs that are invalid CSS selectors. */
   document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
     anchor.addEventListener('click', function (e) {
       var id = this.getAttribute('href');
-      if (id === '#') return;
-      var target = document.querySelector(id);
+      if (!id || id === '#') return;
+      var target = document.getElementById(id.slice(1));
       if (target) {
         e.preventDefault();
         target.scrollIntoView({ behavior: 'smooth' });
@@ -64,14 +72,9 @@
   }
 
   /* ── CTA form ── */
-  function escapeHtml(str) {
-    var div = document.createElement('div');
-    div.appendChild(document.createTextNode(String(str)));
-    return div.innerHTML;
-  }
-
   var ctaForm = document.getElementById('cta-form');
   if (ctaForm) {
+    var zipRegex = /^\d{5}(-\d{4})?$/;
     ctaForm.addEventListener('submit', function (e) {
       e.preventDefault();
       var zip = document.getElementById('zip').value.trim();
@@ -82,16 +85,21 @@
         msgEl.className = 'form-message form-message-error';
         return;
       }
+      if (!zipRegex.test(zip)) {
+        msgEl.textContent = 'Please enter a valid US zip code (e.g. 60601 or 60601-1234).';
+        msgEl.className = 'form-message form-message-error';
+        return;
+      }
 
-      msgEl.textContent = 'Searching for resources near ' + escapeHtml(zip) + '...';
+      msgEl.textContent = 'Searching for resources near ' + zip + '…';
       msgEl.className = 'form-message form-message-info';
 
-      /* Simulate async lookup */
+      /* Simulate async lookup. Built with textContent (no innerHTML) so there is
+         no HTML-injection surface. */
       setTimeout(function () {
-        msgEl.innerHTML =
-          'We found resources near <strong>' + escapeHtml(zip) + '</strong>. ' +
-          'A case coordinator will reach out within 24 hours. ' +
-          'You can also call <strong>1-800-555-0199</strong> for immediate assistance.';
+        msgEl.textContent =
+          'We found resources near ' + zip + '. A case coordinator will reach out ' +
+          'within 24 hours. You can also call 1-800-555-0199 for immediate assistance.';
         msgEl.className = 'form-message form-message-success';
       }, 1200);
     });
