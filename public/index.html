@@ -1,270 +1,836 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ReentryApp — The Yard</title>
-  <link rel="stylesheet" href="styles.css">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f4f4f8; color: #1a1a2e; }
-    header { background: #1a1a2e; color: white; padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; }
-    header h1 { font-size: 1.4rem; }
-    nav { display: flex; gap: 1rem; }
-    nav button { background: transparent; border: 1px solid rgba(255,255,255,0.3); color: white; padding: 0.4rem 1rem; border-radius: 20px; cursor: pointer; font-size: 0.85rem; transition: background 0.2s; }
-    nav button:hover, nav button.active { background: rgba(255,255,255,0.15); }
-    main { max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
-    .panel { display: none; }
-    .panel.active { display: block; }
-    h2 { font-size: 1.5rem; margin-bottom: 1rem; color: #1a1a2e; }
-    .card { background: white; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-    .card h3 { font-size: 1rem; margin-bottom: 0.5rem; }
-    .card p { font-size: 0.875rem; color: #555; }
-    .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
-    .badge-green { background: #d4edda; color: #155724; }
-    .badge-yellow { background: #fff3cd; color: #856404; }
-    .badge-blue { background: #cce5ff; color: #004085; }
-    .form-group { margin-bottom: 1rem; }
-    label { display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem; }
-    select, textarea { width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 8px; font-size: 0.9rem; }
-    .btn { background: #1a1a2e; color: white; border: none; padding: 0.7rem 1.5rem; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600; }
-    .btn:hover { background: #2d2d4e; }
-    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
-    .status-online { background: #28a745; }
-    .status-available { background: #007bff; }
-    .status-in_roll_call { background: #ffc107; }
-    #status-bar { background: #e8f4f8; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.5rem; font-size: 0.875rem; color: #0c5460; }
-    .kite-form { background: white; border-radius: 12px; padding: 1.25rem; margin-top: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-    #kite-status { margin-top: 0.5rem; font-size: 0.85rem; min-height: 1.2em; }
-    .risk-high { color: #dc3545; font-weight: 600; }
-    .risk-low { color: #28a745; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ReentryApp - Your Second Chance Starts Here</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #12121a;
+    --bg3: #1a1a26;
+    --border: #252535;
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+    --accent: #6c63ff;
+    --accent2: #a855f7;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --blue: #3b82f6;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+  a { color: var(--accent); text-decoration: none; }
+
+  /* NAV */
+  #nav { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1.5rem; background: var(--bg2); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; flex-wrap: wrap; gap: 0.5rem; }
+  .logo { font-size: 1.2rem; font-weight: 700; letter-spacing: -0.5px; cursor: pointer; }
+  .logo span { margin-right: 0.4rem; }
+  #nav-tabs { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+  .nav-tab { padding: 0.4rem 0.8rem; border-radius: 8px; border: none; background: none; color: var(--muted); cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: all 0.2s; }
+  .nav-tab:hover { color: var(--text); background: var(--bg3); }
+  .nav-tab.active { background: var(--bg3); color: var(--text); }
+  #nav-auth { display: flex; align-items: center; gap: 0.5rem; }
+
+  /* BUTTONS */
+  .btn { padding: 0.5rem 1rem; border-radius: 8px; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.4rem; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #5b52e6; }
+  .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-ghost { background: none; color: var(--muted); }
+  .btn-ghost:hover { color: var(--text); }
+  .btn-danger { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+  .btn-lg { padding: 0.7rem 1.5rem; font-size: 1rem; }
+  .btn-sm { padding: 0.3rem 0.75rem; font-size: 0.8rem; }
+
+  /* FORMS */
+  .form-group { margin-bottom: 1rem; }
+  .form-group label { display: block; margin-bottom: 0.35rem; font-size: 0.85rem; color: var(--muted); }
+  input, textarea, select { width: 100%; padding: 0.6rem 0.9rem; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 0.9rem; outline: none; transition: border-color 0.2s; }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 80px; }
+  select option { background: var(--bg3); }
+
+  /* CARDS */
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; transition: border-color 0.2s; }
+  .card:hover { border-color: #3a3a5a; }
+  .card-title { font-weight: 600; font-size: 1rem; margin-bottom: 0.3rem; }
+  .card-meta { color: var(--muted); font-size: 0.8rem; margin-bottom: 0.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
+  .card-desc { color: #bbb; font-size: 0.9rem; line-height: 1.5; }
+
+  /* BADGE */
+  .badge { display: inline-flex; align-items: center; padding: 0.2rem 0.6rem; border-radius: 100px; font-size: 0.75rem; font-weight: 500; }
+  .badge-green { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+  .badge-blue { background: rgba(59,130,246,0.15); color: var(--blue); border: 1px solid rgba(59,130,246,0.3); }
+  .badge-yellow { background: rgba(245,158,11,0.15); color: var(--yellow); border: 1px solid rgba(245,158,11,0.3); }
+  .badge-purple { background: rgba(108,99,255,0.15); color: var(--accent); border: 1px solid rgba(108,99,255,0.3); }
+
+  /* PAGES */
+  .page { display: none; padding: 2rem; max-width: 900px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  /* HOME */
+  .hero { text-align: center; padding: 4rem 2rem; }
+  .hero h1 { font-size: 3rem; font-weight: 800; line-height: 1.2; margin-bottom: 1rem; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto 2rem; }
+  .hero-btns { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin: 3rem 0; }
+  .stat { text-align: center; background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; }
+  .stat-num { font-size: 2.2rem; font-weight: 800; color: var(--accent); }
+  .stat-label { color: var(--muted); font-size: 0.85rem; margin-top: 0.25rem; }
+  .features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+  .feature { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; }
+  .feature-icon { font-size: 1.8rem; margin-bottom: 0.5rem; }
+  .feature h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.3rem; }
+  .feature p { color: var(--muted); font-size: 0.85rem; }
+
+  /* AUTH */
+  .auth-box { max-width: 420px; margin: 3rem auto; background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; }
+  .auth-box h2 { text-align: center; font-size: 1.5rem; margin-bottom: 1.5rem; }
+  .auth-switch { text-align: center; margin-top: 1rem; color: var(--muted); font-size: 0.85rem; }
+  .auth-switch a { color: var(--accent); cursor: pointer; }
+  .auth-switch a:hover { text-decoration: underline; }
+
+  /* SECTION HEADER */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem; }
+  .section-header h2 { font-size: 1.4rem; font-weight: 700; }
+
+  /* FILTERS */
+  .resource-filters { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  .filter-chip { padding: 0.35rem 0.9rem; border-radius: 100px; border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; font-size: 0.8rem; transition: all 0.2s; }
+  .filter-chip:hover, .filter-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* GRID */
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; width: 90%; max-width: 480px; max-height: 85vh; overflow-y: auto; }
+  .modal h3 { font-size: 1.2rem; font-weight: 600; margin-bottom: 1.25rem; }
+  .modal-close { float: right; background: none; border: none; color: var(--muted); font-size: 1.3rem; cursor: pointer; line-height: 1; }
+  .modal-close:hover { color: var(--text); }
+
+  /* ROLL CALL */
+  .rollcall-box { text-align: center; background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 3rem 2rem; margin-bottom: 2rem; }
+  .rollcall-box h2 { font-size: 1.6rem; margin-bottom: 0.5rem; }
+  .checkin-date { color: var(--accent); font-size: 1.1rem; margin-bottom: 1.5rem; }
+  .checkin-history { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .checkin-row { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); }
+  .checkin-row:last-child { border-bottom: none; }
+
+  /* TOAST */
+  #toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 0.75rem 1.5rem; font-size: 0.9rem; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+  #toast.show { opacity: 1; }
+  #toast.success { border-color: var(--green); color: var(--green); }
+  #toast.error { border-color: var(--red); color: var(--red); }
+
+  /* PROFILE */
+  .profile-banner { background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%); border-radius: 12px; padding: 2rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1.5rem; }
+  .profile-avatar { width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .profile-info h2 { font-size: 1.4rem; font-weight: 700; }
+  .profile-info p { color: rgba(255,255,255,0.8); font-size: 0.9rem; }
+  .profile-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+  .profile-stat { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; }
+  .profile-stat-num { font-size: 1.6rem; font-weight: 700; color: var(--accent); }
+  .profile-stat-label { color: var(--muted); font-size: 0.8rem; }
+
+  /* COMMUNITY */
+  .post-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+  .post-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+  .post-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.85rem; color: var(--accent); flex-shrink: 0; }
+  .post-author { font-weight: 600; font-size: 0.9rem; }
+  .post-time { color: var(--muted); font-size: 0.78rem; }
+  .post-content { color: #ddd; line-height: 1.6; font-size: 0.9rem; }
+
+  /* SEARCH */
+  .search-bar { position: relative; margin-bottom: 1.5rem; }
+  .search-bar input { padding-left: 2.5rem; }
+  .search-bar::before { content: "🔍"; position: absolute; left: 0.8rem; top: 50%; transform: translateY(-50%); font-size: 0.9rem; pointer-events: none; }
+
+  /* EMPTY STATE */
+  .empty-state { text-align: center; padding: 3rem; color: var(--muted); }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+  .empty-state p { font-size: 0.9rem; }
+
+  /* LOADING */
+  .loading { text-align: center; padding: 2rem; color: var(--muted); font-size: 0.9rem; }
+  .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 0.5rem; vertical-align: middle; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 600px) {
+    .stats { grid-template-columns: 1fr; }
+    .features { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 2rem; }
+    #nav-tabs { display: none; }
+    .page { padding: 1rem; }
+    .profile-stats { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
 </head>
 <body>
-  <header>
-    <h1>&#x1F3DB; The Yard</h1>
-    <nav>
-      <button class="active" onclick="showPanel('yard', this)">The Yard</button>
-      <button onclick="showPanel('commissary', this)">Commissary</button>
-      <button onclick="showPanel('kites', this)">Kites</button>
-      <button onclick="showPanel('rollcall', this)">Roll Call</button>
-    </nav>
-  </header>
 
-  <main>
-    <div id="status-bar">Loading&#x2026;</div>
+<!-- NAV -->
+<nav id="nav">
+  <div class="logo" onclick="showTab('home')"><span>&#128275;</span> ReentryApp</div>
+  <div id="nav-tabs">
+    <button class="nav-tab active" onclick="showTab('home')">Home</button>
+    <button class="nav-tab" onclick="showTab('resources')">Resources</button>
+    <button class="nav-tab" onclick="showTab('jobs')">Jobs</button>
+    <button class="nav-tab" onclick="showTab('housing')">Housing</button>
+    <button class="nav-tab" onclick="showTab('community')">Community</button>
+    <button class="nav-tab" onclick="showTab('rollcall')">Roll Call</button>
+    <button class="nav-tab" id="tab-profile" onclick="showTab('profile')" style="display:none">Profile</button>
+  </div>
+  <div id="nav-auth">
+    <span id="user-greeting" style="display:none;color:var(--muted);font-size:0.85rem;margin-right:0.5rem;"></span>
+    <button class="btn btn-secondary btn-sm" id="btn-login" onclick="openModal('auth-modal');setAuthMode('login')">Sign In</button>
+    <button class="btn btn-primary btn-sm" id="btn-register" onclick="openModal('auth-modal');setAuthMode('register')">Join Free</button>
+    <button class="btn btn-ghost btn-sm" id="btn-logout" style="display:none" onclick="logout()">Logout</button>
+  </div>
+</nav>
 
-    <!-- The Yard -->
-    <div id="yard" class="panel active">
-      <h2>The Yard &#x2014; Community</h2>
-      <div id="residents-list">Loading residents&#x2026;</div>
+<!-- PAGES -->
+<div id="page-home" class="page active">
+  <div class="hero">
+    <div style="display:inline-flex;align-items:center;gap:0.5rem;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);border-radius:100px;padding:0.3rem 1rem;font-size:0.85rem;color:var(--accent);margin-bottom:1rem;">
+      &#128737; Safe, Confidential &amp; Judgment-Free
     </div>
-
-    <!-- Commissary -->
-    <div id="commissary" class="panel">
-      <h2>Commissary &#x2014; Resources</h2>
-      <div id="resources-list">Loading resources&#x2026;</div>
+    <h1>Your Second Chance<br /><span>Starts Here</span></h1>
+    <p>Reentry resources, felon-friendly jobs &amp; housing, community support, and daily check-in — all in one place.</p>
+    <div class="hero-btns">
+      <button class="btn btn-primary btn-lg" onclick="openModal('auth-modal');setAuthMode('register')">Get Started Free</button>
+      <button class="btn btn-secondary btn-lg" onclick="showTab('resources')">Browse Resources</button>
     </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-num">2,400+</div><div class="stat-label">Members Strong</div></div>
+    <div class="stat"><div class="stat-num">850+</div><div class="stat-label">Jobs Listed</div></div>
+    <div class="stat"><div class="stat-num">320+</div><div class="stat-label">Housing Options</div></div>
+  </div>
+  <div class="features">
+    <div class="feature"><div class="feature-icon">&#128203;</div><h3>Reentry Resources</h3><p>Legal aid, food banks, counseling, education — find what you need near you.</p></div>
+    <div class="feature"><div class="feature-icon">&#128188;</div><h3>Felon-Friendly Jobs</h3><p>Employers who actively want to give second chances to qualified workers.</p></div>
+    <div class="feature"><div class="feature-icon">&#127968;</div><h3>Safe Housing</h3><p>Landlords and programs that won't disqualify you for your record.</p></div>
+    <div class="feature"><div class="feature-icon">&#128101;</div><h3>Community Support</h3><p>Connect with others on the same journey. Share wins, ask for help.</p></div>
+  </div>
+</div>
 
-    <!-- Kites (Messages) -->
-    <div id="kites" class="panel">
-      <h2>Kites &#x2014; Send a Message</h2>
-      <div class="kite-form">
-        <div class="form-group">
-          <label for="kite-from">From (Resident)</label>
-          <select id="kite-from"></select>
-        </div>
-        <div class="form-group">
-          <label for="kite-to">To (Resident)</label>
-          <select id="kite-to"></select>
-        </div>
-        <div class="form-group">
-          <label for="kite-body">Message (Kite)</label>
-          <textarea id="kite-body" rows="4" placeholder="Write your kite&#x2026; (max 1000 chars)" maxlength="1000"></textarea>
-        </div>
-        <button class="btn" onclick="sendKite()">Send Kite</button>
-        <div id="kite-status"></div>
+<div id="page-resources" class="page">
+  <div class="section-header">
+    <h2>&#128203; Reentry Resources</h2>
+    <span id="resource-count" style="color:var(--muted);font-size:0.85rem;"></span>
+  </div>
+  <div class="search-bar"><input type="text" id="resource-search" placeholder="Search resources..." oninput="filterResources()" /></div>
+  <div class="resource-filters">
+    <button class="filter-chip active" onclick="setResourceFilter('all',this)">All</button>
+    <button class="filter-chip" onclick="setResourceFilter('Legal',this)">Legal</button>
+    <button class="filter-chip" onclick="setResourceFilter('Housing',this)">Housing</button>
+    <button class="filter-chip" onclick="setResourceFilter('Employment',this)">Employment</button>
+    <button class="filter-chip" onclick="setResourceFilter('Mental Health',this)">Mental Health</button>
+    <button class="filter-chip" onclick="setResourceFilter('Food',this)">Food</button>
+    <button class="filter-chip" onclick="setResourceFilter('Education',this)">Education</button>
+  </div>
+  <div id="resources-list"><div class="loading"><span class="spinner"></span>Loading resources...</div></div>
+</div>
+
+<div id="page-jobs" class="page">
+  <div class="section-header">
+    <h2>&#128188; Felon-Friendly Jobs</h2>
+    <button class="btn btn-primary btn-sm" onclick="requireAuth(()=>openModal('job-modal'))">+ Post Job</button>
+  </div>
+  <div class="search-bar"><input type="text" id="job-search" placeholder="Search jobs, companies..." oninput="filterJobs()" /></div>
+  <div id="jobs-list"><div class="loading"><span class="spinner"></span>Loading jobs...</div></div>
+</div>
+
+<div id="page-housing" class="page">
+  <div class="section-header">
+    <h2>&#127968; Felon-Friendly Housing</h2>
+    <button class="btn btn-primary btn-sm" onclick="requireAuth(()=>openModal('housing-modal'))">+ List Housing</button>
+  </div>
+  <div class="search-bar"><input type="text" id="housing-search" placeholder="Search by city, state..." oninput="filterHousing()" /></div>
+  <div id="housing-list"><div class="loading"><span class="spinner"></span>Loading housing...</div></div>
+</div>
+
+<div id="page-community" class="page">
+  <div class="section-header">
+    <h2>&#128101; Community</h2>
+    <button class="btn btn-primary btn-sm" onclick="requireAuth(()=>openModal('post-modal'))">+ New Post</button>
+  </div>
+  <div id="community-list"><div class="loading"><span class="spinner"></span>Loading posts...</div></div>
+</div>
+
+<div id="page-rollcall" class="page">
+  <div id="rollcall-content">
+    <div class="rollcall-box">
+      <div style="font-size:3rem;margin-bottom:1rem;">&#128737;</div>
+      <h2>Daily Roll Call</h2>
+      <div class="checkin-date" id="today-date"></div>
+      <p style="color:var(--muted);margin-bottom:1.5rem;font-size:0.9rem;">Check in daily to build your streak. Stay accountable, stay connected.</p>
+      <button class="btn btn-primary btn-lg" id="checkin-btn" onclick="doCheckIn()">Check In Today</button>
+      <div id="streak-info" style="margin-top:1rem;color:var(--muted);font-size:0.9rem;"></div>
+    </div>
+    <div style="margin-bottom:1rem;"><h3 style="font-size:1.1rem;font-weight:600;">Check-in History</h3></div>
+    <div class="checkin-history" id="checkin-history"><div class="loading"><span class="spinner"></span>Sign in to see history</div></div>
+  </div>
+</div>
+
+<div id="page-profile" class="page">
+  <div id="profile-content">
+    <div class="profile-banner">
+      <div class="profile-avatar" id="profile-initial">?</div>
+      <div class="profile-info">
+        <h2 id="profile-name">Loading...</h2>
+        <p id="profile-email"></p>
+        <p style="margin-top:0.25rem;font-size:0.8rem;opacity:0.7;">Member since <span id="profile-joined">-</span></p>
       </div>
-      <div id="kite-history" style="margin-top:1.5rem;"></div>
     </div>
+    <div class="profile-stats">
+      <div class="profile-stat"><div class="profile-stat-num" id="pstat-checkins">0</div><div class="profile-stat-label">Check-ins</div></div>
+      <div class="profile-stat"><div class="profile-stat-num" id="pstat-posts">0</div><div class="profile-stat-label">Posts</div></div>
+      <div class="profile-stat"><div class="profile-stat-num" id="pstat-streak">0</div><div class="profile-stat-label">Day Streak</div></div>
+    </div>
+    <div class="card">
+      <h3 style="font-weight:600;margin-bottom:1rem;">Your Recent Posts</h3>
+      <div id="my-posts"><div class="empty-state"><div class="icon">&#128221;</div><p>No posts yet. Join the community!</p></div></div>
+    </div>
+  </div>
+</div>
 
-    <!-- Roll Call -->
-    <div id="rollcall" class="panel">
-      <h2>Roll Call &#x2014; Check In</h2>
-      <div class="kite-form">
-        <div class="form-group">
-          <label for="rc-resident">Resident</label>
-          <select id="rc-resident"></select>
-        </div>
-        <div class="form-group">
-          <label for="rc-status">Wellness Status</label>
-          <select id="rc-status">
-            <option value="steady">Steady</option>
-            <option value="needs_support">Needs Support</option>
-            <option value="urgent">Urgent</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="rc-note">Support Note (optional)</label>
-          <textarea id="rc-note" rows="2" placeholder="Any support needs?"></textarea>
-        </div>
-        <button class="btn" onclick="submitRollCall()">Check In</button>
-        <div id="rc-status-msg"></div>
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="auth-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('auth-modal')">&times;</button>
+    <div id="login-form">
+      <h3>Welcome Back</h3>
+      <div class="form-group"><label>Username</label><input type="text" id="login-username" placeholder="Your username" /></div>
+      <div class="form-group"><label>Password</label><input type="password" id="login-password" placeholder="Your password" /></div>
+      <button class="btn btn-primary" style="width:100%" onclick="doLogin()">Sign In</button>
+      <div class="auth-switch">Don't have an account? <a onclick="setAuthMode('register')">Create one</a></div>
+    </div>
+    <div id="register-form" style="display:none">
+      <h3>Create Your Account</h3>
+      <div class="form-group"><label>Username</label><input type="text" id="reg-username" placeholder="Choose a username" /></div>
+      <div class="form-group"><label>Email (optional)</label><input type="email" id="reg-email" placeholder="your@email.com" /></div>
+      <div class="form-group"><label>Password</label><input type="password" id="reg-password" placeholder="At least 6 characters" /></div>
+      <button class="btn btn-primary" style="width:100%" onclick="doRegister()">Create Account</button>
+      <div class="auth-switch">Already have an account? <a onclick="setAuthMode('login')">Sign in</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- JOB MODAL -->
+<div class="modal-overlay" id="job-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('job-modal')">&times;</button>
+    <h3>Post a Job Opening</h3>
+    <div class="form-group"><label>Job Title *</label><input type="text" id="job-title" placeholder="e.g. Warehouse Associate" /></div>
+    <div class="form-group"><label>Company *</label><input type="text" id="job-company" placeholder="Company name" /></div>
+    <div class="form-group"><label>Location</label><input type="text" id="job-location" placeholder="City, State or Remote" /></div>
+    <div class="form-group"><label>Salary Range</label><input type="text" id="job-salary" placeholder="e.g. $18-22/hr" /></div>
+    <div class="form-group"><label>Description</label><textarea id="job-desc" placeholder="Job responsibilities and requirements..."></textarea></div>
+    <div class="form-group"><label>Type</label>
+      <select id="job-type"><option>Full-time</option><option>Part-time</option><option>Contract</option><option>Temporary</option></select>
+    </div>
+    <div style="display:flex;gap:0.5rem;">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('job-modal')">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="submitJob()">Post Job</button>
+    </div>
+  </div>
+</div>
+
+<!-- HOUSING MODAL -->
+<div class="modal-overlay" id="housing-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('housing-modal')">&times;</button>
+    <h3>List Housing</h3>
+    <div class="form-group"><label>Title *</label><input type="text" id="h-title" placeholder="e.g. 1BR Apartment - No Background Check" /></div>
+    <div class="form-group"><label>Address / Location *</label><input type="text" id="h-location" placeholder="City, State" /></div>
+    <div class="form-group"><label>Monthly Rent</label><input type="text" id="h-rent" placeholder="e.g. $750/mo" /></div>
+    <div class="form-group"><label>Bedrooms</label>
+      <select id="h-bedrooms"><option>Studio</option><option>1</option><option>2</option><option>3</option><option>4+</option></select>
+    </div>
+    <div class="form-group"><label>Description</label><textarea id="h-desc" placeholder="Details about the property and acceptance policy..."></textarea></div>
+    <div style="display:flex;gap:0.5rem;">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('housing-modal')">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="submitHousing()">List Housing</button>
+    </div>
+  </div>
+</div>
+
+<!-- POST MODAL -->
+<div class="modal-overlay" id="post-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('post-modal')">&times;</button>
+    <h3>Share with the Community</h3>
+    <div class="form-group"><label>Your Message *</label><textarea id="post-content" placeholder="Share your story, ask for advice, celebrate a win..." style="min-height:120px"></textarea></div>
+    <div style="display:flex;gap:0.5rem;">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('post-modal')">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="submitPost()">Post</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ==================== STATE ====================
+const API = '';
+let token = localStorage.getItem('ra_token');
+let currentUser = JSON.parse(localStorage.getItem('ra_user') || 'null');
+let allResources = [];
+let allJobs = [];
+let allHousing = [];
+let resourceFilter = 'all';
+let apiOnline = true;
+
+// ==================== DEMO DATA ====================
+const demoResources = [
+  { id:1, title:'Legal Aid Society', category:'Legal', description:'Free legal assistance for reentry issues including expungement, record sealing, and housing discrimination.', phone:'1-800-555-0101', website:'https://example.com', city:'Nationwide' },
+  { id:2, title:'Second Chance Food Pantry', category:'Food', description:'No-questions-asked food assistance for returning citizens and families in need.', phone:'1-800-555-0102', website:'', city:'Multiple Locations' },
+  { id:3, title:'Reentry Housing Coalition', category:'Housing', description:'Transitional housing placement and permanent supportive housing for people with felony convictions.', phone:'1-800-555-0103', website:'https://example.com', city:'Nationwide' },
+  { id:4, title:'Workforce Development Center', category:'Employment', description:'Free job training, resume help, and placement services for formerly incarcerated people.', phone:'1-800-555-0104', website:'https://example.com', city:'Multiple Locations' },
+  { id:5, title:'Peer Support Network', category:'Mental Health', description:'One-on-one peer counseling and group support facilitated by people with lived experience.', phone:'1-800-555-0105', website:'', city:'Nationwide' },
+  { id:6, title:'GED & Vocational Training', category:'Education', description:'Free GED prep, vocational certifications, and college enrollment assistance for returning citizens.', phone:'1-800-555-0106', website:'https://example.com', city:'Multiple Locations' },
+];
+
+const demoJobs = [
+  { id:1, title:'Warehouse Associate', company:'Fresh Start Logistics', location:'Chicago, IL', salary:'$18-20/hr', type:'Full-time', description:'Picking, packing, and shipping in a supportive environment. Background-friendly employer.', posted_at: new Date().toISOString() },
+  { id:2, title:'CDL Truck Driver', company:'Road to Recovery Transport', location:'Remote/Travel', salary:'$55,000-70,000/yr', type:'Full-time', description:'Long haul trucking. We help cover CDL costs. Felony-friendly. Medical included.', posted_at: new Date().toISOString() },
+  { id:3, title:'Construction Laborer', company:'Build Again Construction', location:'Atlanta, GA', salary:'$16-22/hr', type:'Full-time', description:'General construction labor. On-the-job training. No background check for most positions.', posted_at: new Date().toISOString() },
+];
+
+const demoHousing = [
+  { id:1, title:'Transitional House — Men', location:'Detroit, MI', rent:'$400/mo', bedrooms:'Shared', description:'Safe, sober transitional housing for men recently released. No background check required. Includes meals.', posted_at: new Date().toISOString() },
+  { id:2, title:'2BR Apartment - Criminal Record OK', location:'Houston, TX', rent:'$850/mo', bedrooms:'2', description:'Landlord works with returning citizens. Background check reviewed holistically. Security deposit assistance available.', posted_at: new Date().toISOString() },
+];
+
+// ==================== API HELPERS ====================
+async function apiFetch(path, options = {}) {
+  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  try {
+    const res = await fetch(API + path, { ...options, headers });
+    if (res.status === 401) { logout(); return null; }
+    const data = await res.json();
+    apiOnline = true;
+    return { ok: res.ok, status: res.status, data };
+  } catch {
+    apiOnline = false;
+    return null;
+  }
+}
+
+// ==================== AUTH ====================
+function setAuthMode(mode) {
+  document.getElementById('login-form').style.display = mode === 'login' ? '' : 'none';
+  document.getElementById('register-form').style.display = mode === 'register' ? '' : 'none';
+}
+
+async function doLogin() {
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!username || !password) return showToast('Fill in all fields', 'error');
+  const r = await apiFetch('/api/auth/login', { method:'POST', body: JSON.stringify({username, password}) });
+  if (r && r.ok) {
+    token = r.data.token;
+    currentUser = r.data.user;
+    localStorage.setItem('ra_token', token);
+    localStorage.setItem('ra_user', JSON.stringify(currentUser));
+    closeModal('auth-modal');
+    updateAuthUI();
+    showToast('Welcome back, ' + currentUser.username + '! ✓', 'success');
+    loadRollCall();
+  } else {
+    showToast((r && r.data && r.data.error) || 'Login failed', 'error');
+  }
+}
+
+async function doRegister() {
+  const username = document.getElementById('reg-username').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  if (!username || !password) return showToast('Username and password required', 'error');
+  if (password.length < 6) return showToast('Password must be 6+ characters', 'error');
+  const r = await apiFetch('/api/auth/register', { method:'POST', body: JSON.stringify({username, email, password}) });
+  if (r && r.ok) {
+    token = r.data.token;
+    currentUser = r.data.user;
+    localStorage.setItem('ra_token', token);
+    localStorage.setItem('ra_user', JSON.stringify(currentUser));
+    closeModal('auth-modal');
+    updateAuthUI();
+    showToast('Welcome to ReentryApp! ✓', 'success');
+    loadRollCall();
+  } else {
+    showToast((r && r.data && r.data.error) || 'Registration failed', 'error');
+  }
+}
+
+function logout() {
+  token = null;
+  currentUser = null;
+  localStorage.removeItem('ra_token');
+  localStorage.removeItem('ra_user');
+  updateAuthUI();
+  showToast('Logged out');
+}
+
+function updateAuthUI() {
+  const loggedIn = !!currentUser;
+  document.getElementById('btn-login').style.display = loggedIn ? 'none' : '';
+  document.getElementById('btn-register').style.display = loggedIn ? 'none' : '';
+  document.getElementById('btn-logout').style.display = loggedIn ? '' : 'none';
+  document.getElementById('user-greeting').style.display = loggedIn ? '' : 'none';
+  document.getElementById('tab-profile').style.display = loggedIn ? '' : 'none';
+  if (loggedIn) {
+    document.getElementById('user-greeting').textContent = 'Hi, ' + currentUser.username;
+    updateProfilePage();
+  }
+}
+
+function requireAuth(cb) {
+  if (currentUser) { cb(); } else { openModal('auth-modal'); setAuthMode('register'); }
+}
+
+// ==================== TABS ====================
+function showTab(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const page = document.getElementById('page-' + name);
+  if (page) page.classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    if (t.textContent.toLowerCase().includes(name) || t.getAttribute('onclick')?.includes("'"+name+"'")) {
+      t.classList.add('active');
+    }
+  });
+  if (name === 'resources') loadResources();
+  if (name === 'jobs') loadJobs();
+  if (name === 'housing') loadHousing();
+  if (name === 'community') loadCommunity();
+  if (name === 'rollcall') loadRollCall();
+  if (name === 'profile' && currentUser) updateProfilePage();
+}
+
+// ==================== RESOURCES ====================
+async function loadResources() {
+  const r = await apiFetch('/api/resources');
+  if (r && r.ok) {
+    allResources = r.data;
+  } else {
+    allResources = demoResources;
+  }
+  renderResources();
+}
+
+function setResourceFilter(cat, btn) {
+  resourceFilter = cat;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  renderResources();
+}
+
+function filterResources() { renderResources(); }
+
+function renderResources() {
+  const search = (document.getElementById('resource-search')?.value || '').toLowerCase();
+  let list = allResources;
+  if (resourceFilter !== 'all') list = list.filter(r => r.category === resourceFilter);
+  if (search) list = list.filter(r => (r.title+r.description+r.category+r.city).toLowerCase().includes(search));
+  document.getElementById('resource-count').textContent = list.length + ' resource' + (list.length !== 1 ? 's' : '');
+  if (!list.length) {
+    document.getElementById('resources-list').innerHTML = '<div class="empty-state"><div class="icon">&#128203;</div><p>No resources found.</p></div>';
+    return;
+  }
+  const catColors = { Legal:'badge-blue', Housing:'badge-purple', Employment:'badge-green', 'Mental Health':'badge-yellow', Food:'badge-green', Education:'badge-blue' };
+  document.getElementById('resources-list').innerHTML = '<div class="cards-grid">' + list.map(r => `
+    <div class="card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:0.5rem;margin-bottom:0.5rem;">
+        <div class="card-title">${esc(r.title)}</div>
+        <span class="badge ${catColors[r.category]||'badge-purple'}">${esc(r.category)}</span>
       </div>
-      <div id="rollcall-log" style="margin-top:1.5rem;"></div>
-    </div>
-  </main>
+      <div class="card-meta">${r.city?'&#128205; '+esc(r.city):''}${r.phone?' | &#128222; '+esc(r.phone):''}</div>
+      <div class="card-desc">${esc(r.description)}</div>
+      ${r.website?`<a href="${esc(r.website)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:0.75rem;font-size:0.8rem;color:var(--accent);">Visit Website &#8599;</a>`:''}
+    </div>`).join('') + '</div>';
+}
 
-  <script>
-    const API = '/api'
-    let residents = []
+// ==================== JOBS ====================
+async function loadJobs() {
+  const r = await apiFetch('/api/jobs');
+  allJobs = (r && r.ok) ? r.data : demoJobs;
+  renderJobs();
+}
 
-    function showPanel(name, btn) {
-      document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active') })
-      document.querySelectorAll('nav button').forEach(function(b) { b.classList.remove('active') })
-      document.getElementById(name).classList.add('active')
-      if (btn) btn.classList.add('active')
-    }
+function filterJobs() { renderJobs(); }
 
-    async function fetchStatus() {
-      try {
-        const r = await fetch(API + '/status')
-        const json = await r.json()
-        const d = json.data
-        document.getElementById('status-bar').textContent = '✅ ' + d.app + ' is running — Modules: ' + d.modules.join(', ')
-      } catch (e) {
-        document.getElementById('status-bar').textContent = 'Server status unknown'
-      }
-    }
+function renderJobs() {
+  const search = (document.getElementById('job-search')?.value || '').toLowerCase();
+  let list = search ? allJobs.filter(j => (j.title+j.company+j.location+j.description).toLowerCase().includes(search)) : allJobs;
+  if (!list.length) {
+    document.getElementById('jobs-list').innerHTML = '<div class="empty-state"><div class="icon">&#128188;</div><p>No jobs found. Be the first to post one!</p></div>';
+    return;
+  }
+  document.getElementById('jobs-list').innerHTML = list.map(j => `
+    <div class="card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:0.5rem;flex-wrap:wrap;">
+        <div>
+          <div class="card-title">${esc(j.title)}</div>
+          <div class="card-meta">
+            &#127970; ${esc(j.company||'')}
+            ${j.location?' &bull; &#128205; '+esc(j.location):''}
+            ${j.salary?' &bull; &#128176; '+esc(j.salary):''}
+          </div>
+        </div>
+        <span class="badge badge-green">${esc(j.type||'Full-time')}</span>
+      </div>
+      <div class="card-desc" style="margin-top:0.5rem;">${esc(j.description||'')}</div>
+      <div style="margin-top:0.75rem;font-size:0.78rem;color:var(--muted);">${timeAgo(j.posted_at)}</div>
+    </div>`).join('');
+}
 
-    async function loadYard() {
-      try {
-        const r = await fetch(API + '/community')
-        const json = await r.json()
-        residents = json.data.residents
-        populateResidentSelects()
-        document.getElementById('residents-list').innerHTML = residents.map(function(res) {
-          return '<div class="card">' +
-            '<h3><span class="status-dot status-' + res.status + '"></span>' + res.displayName + ' <span class="badge badge-blue">Tier ' + res.tier + '</span></h3>' +
-            '<p>📋 ' + res.programGoal + '</p>' +
-            '<p style="margin-top:0.5rem">⭐ ' + res.goodTimeCredits + ' good-time credits &nbsp;|&nbsp; 👮 ' + res.caseManagerName + '</p>' +
-            '<p style="margin-top:0.5rem;font-style:italic;color:#666">"' + res.compatibilityNote + '"</p>' +
-            '</div>'
-        }).join('')
-      } catch (e) {
-        document.getElementById('residents-list').innerHTML = '<p>Could not load residents.</p>'
-      }
-    }
+async function submitJob() {
+  const title = document.getElementById('job-title').value.trim();
+  const company = document.getElementById('job-company').value.trim();
+  if (!title || !company) return showToast('Title and company required', 'error');
+  const body = {
+    title, company,
+    location: document.getElementById('job-location').value.trim(),
+    salary: document.getElementById('job-salary').value.trim(),
+    description: document.getElementById('job-desc').value.trim(),
+    type: document.getElementById('job-type').value,
+  };
+  const r = await apiFetch('/api/jobs', { method:'POST', body: JSON.stringify(body) });
+  if (r && r.ok) {
+    closeModal('job-modal');
+    clearFields(['job-title','job-company','job-location','job-salary','job-desc']);
+    showToast('Job posted! ✓', 'success');
+    loadJobs();
+  } else { showToast('Failed to post job', 'error'); }
+}
 
-    async function loadCommissary() {
-      try {
-        const r = await fetch(API + '/resources')
-        const json = await r.json()
-        document.getElementById('resources-list').innerHTML = json.data.resources.map(function(res) {
-          return '<div class="card">' +
-            '<h3>' + res.title + ' <span class="badge badge-green">' + res.format + '</span></h3>' +
-            '<p>📂 ' + res.displayArea + ' &nbsp;|&nbsp; 🔖 Saved by ' + res.savedCount + ' residents</p>' +
-            '</div>'
-        }).join('')
-      } catch (e) {
-        document.getElementById('resources-list').innerHTML = '<p>Could not load resources.</p>'
-      }
-    }
+// ==================== HOUSING ====================
+async function loadHousing() {
+  const r = await apiFetch('/api/housing');
+  allHousing = (r && r.ok) ? r.data : demoHousing;
+  renderHousing();
+}
 
-    async function loadKiteHistory() {
-      try {
-        const r = await fetch(API + '/messages')
-        const json = await r.json()
-        const msgs = json.data.messages
-        if (!msgs.length) {
-          document.getElementById('kite-history').innerHTML = '<p style="color:#888">No kites sent yet.</p>'
-          return
-        }
-        document.getElementById('kite-history').innerHTML = '<h3 style="margin-bottom:0.75rem">Sent Kites</h3>' + msgs.map(function(m) {
-          return '<div class="card">' +
-            '<p><strong>' + m.senderId + '</strong> → <strong>' + m.recipientId + '</strong></p>' +
-            '<p style="margin-top:0.5rem">' + m.body + '</p>' +
-            '<p style="margin-top:0.5rem;font-size:0.8rem;color:#888">Risk: <span class="' + (m.moderation.riskScore > 60 ? 'risk-high' : 'risk-low') + '">' + m.moderation.riskScore + '</span> &nbsp;|&nbsp; Status: ' + m.deliveryStatus + '</p>' +
-            '</div>'
-        }).join('')
-      } catch (e) {}
-    }
+function filterHousing() { renderHousing(); }
 
-    function populateResidentSelects() {
-      const opts = residents.map(function(r) {
-        return '<option value="' + r.id + '">' + r.displayName + ' (' + r.cohortName + ')</option>'
-      }).join('')
-      ;['kite-from', 'kite-to', 'rc-resident'].forEach(function(id) {
-        const el = document.getElementById(id)
-        if (el) el.innerHTML = opts
-      })
-    }
+function renderHousing() {
+  const search = (document.getElementById('housing-search')?.value || '').toLowerCase();
+  let list = search ? allHousing.filter(h => (h.title+h.location+h.description).toLowerCase().includes(search)) : allHousing;
+  if (!list.length) {
+    document.getElementById('housing-list').innerHTML = '<div class="empty-state"><div class="icon">&#127968;</div><p>No housing listed. Add yours!</p></div>';
+    return;
+  }
+  document.getElementById('housing-list').innerHTML = list.map(h => `
+    <div class="card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:0.5rem;flex-wrap:wrap;">
+        <div>
+          <div class="card-title">${esc(h.title)}</div>
+          <div class="card-meta">
+            &#128205; ${esc(h.location||'')}
+            ${h.rent?' &bull; &#128176; '+esc(h.rent):''}
+            ${h.bedrooms?' &bull; &#127968; '+esc(h.bedrooms)+' bed':''}
+          </div>
+        </div>
+        <span class="badge badge-purple">Available</span>
+      </div>
+      <div class="card-desc" style="margin-top:0.5rem;">${esc(h.description||'')}</div>
+      <div style="margin-top:0.75rem;font-size:0.78rem;color:var(--muted);">${timeAgo(h.posted_at)}</div>
+    </div>`).join('');
+}
 
-    async function sendKite() {
-      const senderId = document.getElementById('kite-from').value
-      const recipientId = document.getElementById('kite-to').value
-      const body = document.getElementById('kite-body').value.trim()
-      const statusEl = document.getElementById('kite-status')
-      if (!body) { statusEl.textContent = 'Write a message first.'; return }
-      try {
-        const r = await fetch(API + '/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ senderId: senderId, recipientId: recipientId, body: body })
-        })
-        const json = await r.json()
-        document.getElementById('kite-body').value = ''
-        if (json.data.deliveryStatus === 'approved') {
-          statusEl.innerHTML = '<span class="risk-low">✅ Kite delivered.</span>'
-        } else {
-          statusEl.innerHTML = '<span class="risk-high">⚠️ Kite sent to Mail Room for review.</span>'
-        }
-        loadKiteHistory()
-      } catch (e) {
-        statusEl.textContent = 'Failed to send kite.'
-      }
-    }
+async function submitHousing() {
+  const title = document.getElementById('h-title').value.trim();
+  const location = document.getElementById('h-location').value.trim();
+  if (!title || !location) return showToast('Title and location required', 'error');
+  const body = {
+    title, location,
+    rent: document.getElementById('h-rent').value.trim(),
+    bedrooms: document.getElementById('h-bedrooms').value,
+    description: document.getElementById('h-desc').value.trim(),
+  };
+  const r = await apiFetch('/api/housing', { method:'POST', body: JSON.stringify(body) });
+  if (r && r.ok) {
+    closeModal('housing-modal');
+    clearFields(['h-title','h-location','h-rent','h-desc']);
+    showToast('Housing listed! ✓', 'success');
+    loadHousing();
+  } else { showToast('Failed to list housing', 'error'); }
+}
 
-    async function submitRollCall() {
-      const participantId = document.getElementById('rc-resident').value
-      const wellnessStatus = document.getElementById('rc-status').value
-      const supportNeed = document.getElementById('rc-note').value
-      const msg = document.getElementById('rc-status-msg')
-      try {
-        const r = await fetch(API + '/roll-call', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ participantId: participantId, wellnessStatus: wellnessStatus, supportNeed: supportNeed })
-        })
-        await r.json()
-        msg.innerHTML = '<span style="color:#28a745">✅ Roll call recorded.</span>'
-        document.getElementById('rc-note').value = ''
-        loadRollCall()
-      } catch (e) {
-        msg.textContent = 'Check-in failed.'
-      }
-    }
+// ==================== COMMUNITY ====================
+async function loadCommunity() {
+  const r = await apiFetch('/api/community');
+  const posts = (r && r.ok) ? r.data : [];
+  if (!posts.length) {
+    document.getElementById('community-list').innerHTML = `
+      <div class="empty-state">
+        <div class="icon">&#128101;</div>
+        <p>No posts yet. Be the first to share!</p>
+        <button class="btn btn-primary" style="margin-top:1rem" onclick="requireAuth(()=>openModal('post-modal'))">Share Your Story</button>
+      </div>`;
+    return;
+  }
+  document.getElementById('community-list').innerHTML = posts.map(p => `
+    <div class="post-card">
+      <div class="post-header">
+        <div class="post-avatar">${(p.username||'A').charAt(0).toUpperCase()}</div>
+        <div>
+          <div class="post-author">${esc(p.username||'Anonymous')}</div>
+          <div class="post-time">${timeAgo(p.created_at)}</div>
+        </div>
+      </div>
+      <div class="post-content">${esc(p.content)}</div>
+    </div>`).join('');
+}
 
-    async function loadRollCall() {
-      try {
-        const r = await fetch(API + '/roll-call')
-        const json = await r.json()
-        const entries = json.data.latest
-        if (entries.length) {
-          document.getElementById('rollcall-log').innerHTML = '<h3 style="margin-bottom:0.75rem">Recent Check-ins</h3>' + entries.map(function(e) {
-            return '<div class="card"><p><strong>' + e.participantId + '</strong> — ' + e.wellnessStatus + (e.supportNeed ? ' — ' + e.supportNeed : '') + '</p><p style="font-size:0.8rem;color:#888">' + new Date(e.createdAt).toLocaleString() + '</p></div>'
-          }).join('')
-        } else {
-          document.getElementById('rollcall-log').innerHTML = ''
-        }
-      } catch (e) {}
-    }
+async function submitPost() {
+  const content = document.getElementById('post-content').value.trim();
+  if (!content) return showToast('Write something first', 'error');
+  const r = await apiFetch('/api/community', { method:'POST', body: JSON.stringify({content}) });
+  if (r && r.ok) {
+    closeModal('post-modal');
+    document.getElementById('post-content').value = '';
+    showToast('Posted! ✓', 'success');
+    loadCommunity();
+  } else { showToast('Failed to post', 'error'); }
+}
 
-    fetchStatus()
-    loadYard()
-    loadCommissary()
-    loadKiteHistory()
-    loadRollCall()
-  </script>
+// ==================== ROLL CALL ====================
+async function loadRollCall() {
+  const today = new Date();
+  document.getElementById('today-date').textContent = today.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  if (!currentUser) {
+    document.getElementById('checkin-btn').textContent = 'Sign In to Check In';
+    document.getElementById('checkin-btn').onclick = () => { openModal('auth-modal'); setAuthMode('login'); };
+    document.getElementById('checkin-history').innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--muted);">Sign in to view your history</div>';
+    return;
+  }
+  const r = await apiFetch('/api/rollcall');
+  if (!r || !r.ok) {
+    document.getElementById('checkin-history').innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--muted);">Could not load history</div>';
+    return;
+  }
+  const records = r.data;
+  const todayStr = new Date().toISOString().split('T')[0];
+  const checkedToday = records.some(rec => rec.check_in_date === todayStr);
+  const btn = document.getElementById('checkin-btn');
+  if (checkedToday) {
+    btn.textContent = '✓ Checked In Today';
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+  } else {
+    btn.textContent = 'Check In Today';
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.onclick = doCheckIn;
+  }
+  const streak = calcStreak(records);
+  document.getElementById('streak-info').textContent = streak > 0 ? '🔥 ' + streak + '-day streak!' : '';
+  document.getElementById('pstat-streak').textContent = streak;
+  document.getElementById('pstat-checkins').textContent = records.length;
+  if (!records.length) {
+    document.getElementById('checkin-history').innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--muted);">No check-ins yet. Start today!</div>';
+    return;
+  }
+  document.getElementById('checkin-history').innerHTML = records.slice(0,14).map(rec => `
+    <div class="checkin-row">
+      <span>${new Date(rec.check_in_date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</span>
+      <span class="badge badge-green">&#10003; Checked In</span>
+    </div>`).join('');
+}
+
+async function doCheckIn() {
+  if (!currentUser) { openModal('auth-modal'); return; }
+  const r = await apiFetch('/api/rollcall', { method:'POST', body: JSON.stringify({}) });
+  if (r && r.ok) {
+    showToast('Checked in! Keep it up ✓', 'success');
+    loadRollCall();
+  } else if (r && r.status === 409) {
+    showToast('Already checked in today!', 'error');
+  } else {
+    showToast('Check-in failed', 'error');
+  }
+}
+
+function calcStreak(records) {
+  if (!records.length) return 0;
+  const sorted = [...records].sort((a,b) => b.date.localeCompare(a.date));
+  const today = new Date().toISOString().split('T')[0];
+  let streak = 0;
+  let current = today;
+  for (const rec of sorted) {
+    if (rec.date === current) {
+      streak++;
+      const d = new Date(current + 'T12:00:00');
+      d.setDate(d.getDate() - 1);
+      current = d.toISOString().split('T')[0];
+    } else { break; }
+  }
+  return streak;
+}
+
+// ==================== PROFILE ====================
+function updateProfilePage() {
+  if (!currentUser) return;
+  document.getElementById('profile-initial').textContent = currentUser.username.charAt(0).toUpperCase();
+  document.getElementById('profile-name').textContent = currentUser.username;
+  document.getElementById('profile-email').textContent = currentUser.email || '';
+  const joined = currentUser.created_at ? new Date(currentUser.created_at).toLocaleDateString('en-US', {month:'long', year:'numeric'}) : 'Today';
+  document.getElementById('profile-joined').textContent = joined;
+}
+
+// ==================== UTILS ====================
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  const diff = Date.now() - d.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return mins + 'm ago';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return days + 'd ago';
+  return d.toLocaleDateString();
+}
+
+function clearFields(ids) { ids.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; }); }
+
+// ==================== MODALS ====================
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+// ==================== TOAST ====================
+let toastTimer;
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show' + (type ? ' ' + type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className = '', 3000);
+}
+
+// ==================== INIT ====================
+document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+updateAuthUI();
+loadResources();
+</script>
 </body>
 </html>

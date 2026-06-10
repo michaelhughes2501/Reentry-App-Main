@@ -1,26 +1,19 @@
 {
-  "name": "reentryapp",
-  "version": "0.1.0",
-  "description": "Web app supporting reentry into the community after incarceration.",
+  "name": "reentry-app",
+  "version": "1.0.0",
+  "description": "Reentry support platform for formerly incarcerated individuals",
+  "type": "module",
   "main": "server.js",
-  "engines": {
-    "node": ">=18.11.0"
-  },
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js",
-    "test": "echo \"No tests yet\" && exit 0"
+    "dev": "node server.js",
+    "test": "echo \"Tests pending\" && exit 0"
   },
-  "type": "commonjs",
-  "license": "ISC",
   "dependencies": {
-    "@supabase/supabase-js": "^2.48.1",
-    "dotenv": "^17.0.0",
-    "express": "^5.2.1",
-    "express-rate-limit": "^8.5.1",
-    "helmet": "^8.1.0",
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^9.4.3",
     "cors": "^2.8.5",
-    "express-validator": "^7.2.1",
-    "hpp": "^0.2.3"
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2"
   }
 }
