@@ -381,7 +381,7 @@ function createApp(dbClient = supabase) {
     sendError(req, res, 404, 'NOT_FOUND', 'That API route is not available.');
   });
 
-  app.get('(.*)', (req, res) => {
+  app.use((req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
   });
 

@@ -3,268 +3,343 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ReentryApp — The Yard</title>
+  <title>New Horizon — A Fresh Start After Incarceration</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="styles.css">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f4f4f8; color: #1a1a2e; }
-    header { background: #1a1a2e; color: white; padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; }
-    header h1 { font-size: 1.4rem; }
-    nav { display: flex; gap: 1rem; }
-    nav button { background: transparent; border: 1px solid rgba(255,255,255,0.3); color: white; padding: 0.4rem 1rem; border-radius: 20px; cursor: pointer; font-size: 0.85rem; transition: background 0.2s; }
-    nav button:hover, nav button.active { background: rgba(255,255,255,0.15); }
-    main { max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
-    .panel { display: none; }
-    .panel.active { display: block; }
-    h2 { font-size: 1.5rem; margin-bottom: 1rem; color: #1a1a2e; }
-    .card { background: white; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-    .card h3 { font-size: 1rem; margin-bottom: 0.5rem; }
-    .card p { font-size: 0.875rem; color: #555; }
-    .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
-    .badge-green { background: #d4edda; color: #155724; }
-    .badge-yellow { background: #fff3cd; color: #856404; }
-    .badge-blue { background: #cce5ff; color: #004085; }
-    .form-group { margin-bottom: 1rem; }
-    label { display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem; }
-    select, textarea { width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 8px; font-size: 0.9rem; }
-    .btn { background: #1a1a2e; color: white; border: none; padding: 0.7rem 1.5rem; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600; }
-    .btn:hover { background: #2d2d4e; }
-    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
-    .status-online { background: #28a745; }
-    .status-available { background: #007bff; }
-    .status-in_roll_call { background: #ffc107; }
-    #status-bar { background: #e8f4f8; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.5rem; font-size: 0.875rem; color: #0c5460; }
-    .kite-form { background: white; border-radius: 12px; padding: 1.25rem; margin-top: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-    #kite-status { margin-top: 0.5rem; font-size: 0.85rem; min-height: 1.2em; }
-    .risk-high { color: #dc3545; font-weight: 600; }
-    .risk-low { color: #28a745; }
-  </style>
 </head>
 <body>
-  <header>
-    <h1>&#x1F3DB; The Yard</h1>
-    <nav>
-      <button class="active" onclick="showPanel('yard', this)">The Yard</button>
-      <button onclick="showPanel('commissary', this)">Commissary</button>
-      <button onclick="showPanel('kites', this)">Kites</button>
-      <button onclick="showPanel('rollcall', this)">Roll Call</button>
-    </nav>
-  </header>
 
-  <main>
-    <div id="status-bar">Loading&#x2026;</div>
-
-    <!-- The Yard -->
-    <div id="yard" class="panel active">
-      <h2>The Yard &#x2014; Community</h2>
-      <div id="residents-list">Loading residents&#x2026;</div>
+  <!-- ===== NAVIGATION ===== -->
+  <nav class="site-nav" id="site-nav">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">
+        <span class="logo-icon" aria-hidden="true">&#9670;</span>
+        New Horizon
+      </a>
+      <ul class="nav-links">
+        <li><a href="#resources">Resources</a></li>
+        <li><a href="#features">How It Works</a></li>
+        <li><a href="#cta" class="nav-cta">Get Started</a></li>
+      </ul>
+      <button class="nav-toggle" aria-label="Toggle menu" type="button">
+        <span></span><span></span><span></span>
+      </button>
     </div>
+    <ul class="nav-mobile" id="nav-mobile">
+      <li><a href="#resources">Resources</a></li>
+      <li><a href="#features">How It Works</a></li>
+      <li><a href="#cta">Get Started</a></li>
+    </ul>
+  </nav>
 
-    <!-- Commissary -->
-    <div id="commissary" class="panel">
-      <h2>Commissary &#x2014; Resources</h2>
-      <div id="resources-list">Loading resources&#x2026;</div>
+  <!-- ===== HERO SECTION ===== -->
+  <section class="hero" id="home">
+    <div class="hero-bg">
+      <div class="hero-orb hero-orb-1"></div>
+      <div class="hero-orb hero-orb-2"></div>
+      <div class="hero-orb hero-orb-3"></div>
+      <div class="hero-grid"></div>
     </div>
-
-    <!-- Kites (Messages) -->
-    <div id="kites" class="panel">
-      <h2>Kites &#x2014; Send a Message</h2>
-      <div class="kite-form">
-        <div class="form-group">
-          <label for="kite-from">From (Resident)</label>
-          <select id="kite-from"></select>
-        </div>
-        <div class="form-group">
-          <label for="kite-to">To (Resident)</label>
-          <select id="kite-to"></select>
-        </div>
-        <div class="form-group">
-          <label for="kite-body">Message (Kite)</label>
-          <textarea id="kite-body" rows="4" placeholder="Write your kite&#x2026; (max 1000 chars)" maxlength="1000"></textarea>
-        </div>
-        <button class="btn" onclick="sendKite()">Send Kite</button>
-        <div id="kite-status"></div>
+    <div class="hero-inner">
+      <div class="hero-badge animate-fade-up" style="animation-delay: 0.1s">
+        <span class="badge-dot"></span>
+        Free &amp; Confidential Support
       </div>
-      <div id="kite-history" style="margin-top:1.5rem;"></div>
-    </div>
-
-    <!-- Roll Call -->
-    <div id="rollcall" class="panel">
-      <h2>Roll Call &#x2014; Check In</h2>
-      <div class="kite-form">
-        <div class="form-group">
-          <label for="rc-resident">Resident</label>
-          <select id="rc-resident"></select>
-        </div>
-        <div class="form-group">
-          <label for="rc-status">Wellness Status</label>
-          <select id="rc-status">
-            <option value="steady">Steady</option>
-            <option value="needs_support">Needs Support</option>
-            <option value="urgent">Urgent</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="rc-note">Support Note (optional)</label>
-          <textarea id="rc-note" rows="2" placeholder="Any support needs?"></textarea>
-        </div>
-        <button class="btn" onclick="submitRollCall()">Check In</button>
-        <div id="rc-status-msg"></div>
+      <h1 class="hero-title animate-fade-up" style="animation-delay: 0.2s">
+        Your Second Chapter<br>
+        <span class="hero-gradient">Starts Today</span>
+      </h1>
+      <p class="hero-subtitle animate-fade-up" style="animation-delay: 0.35s">
+        New Horizon connects returning citizens with housing, employment, legal aid,
+        and community support &mdash; because everyone deserves a fair shot at a fresh start.
+      </p>
+      <div class="hero-actions animate-fade-up" style="animation-delay: 0.5s">
+        <a href="#cta" class="btn btn-primary">
+          <span>Find Resources Near You</span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="18" height="18" aria-hidden="true"><path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd"/></svg>
+        </a>
+        <a href="#features" class="btn btn-ghost">See How It Works</a>
       </div>
-      <div id="rollcall-log" style="margin-top:1.5rem;"></div>
+      <div class="hero-stats animate-fade-up" style="animation-delay: 0.65s">
+        <div class="stat">
+          <span class="stat-number">12,000+</span>
+          <span class="stat-label">People Helped</span>
+        </div>
+        <div class="stat-divider" role="separator"></div>
+        <div class="stat">
+          <span class="stat-number">340+</span>
+          <span class="stat-label">Partner Organizations</span>
+        </div>
+        <div class="stat-divider" role="separator"></div>
+        <div class="stat">
+          <span class="stat-number">50 States</span>
+          <span class="stat-label">Nationwide Coverage</span>
+        </div>
+      </div>
     </div>
-  </main>
+    <div class="hero-scroll-hint" aria-hidden="true">
+      <span>Scroll to explore</span>
+      <div class="scroll-arrow"></div>
+    </div>
+  </section>
 
-  <script>
-    const API = '/api'
-    let residents = []
+  <!-- ===== RESOURCES SECTION ===== -->
+  <section class="resources" id="resources">
+    <div class="section-inner">
+      <div class="section-header">
+        <span class="section-label">Support Services</span>
+        <h2 class="section-title">Everything You Need<br>In One Place</h2>
+        <p class="section-sub">
+          Navigating life after incarceration is hard enough. We make finding help simple,
+          fast, and judgment-free.
+        </p>
+      </div>
+      <div class="resource-grid">
 
-    function showPanel(name, btn) {
-      document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active') })
-      document.querySelectorAll('nav button').forEach(function(b) { b.classList.remove('active') })
-      document.getElementById(name).classList.add('active')
-      if (btn) btn.classList.add('active')
-    }
+        <div class="resource-card" data-color="blue">
+          <div class="rc-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <h3>Housing</h3>
+          <p>Transitional housing, sober living homes, and long-term rental assistance programs that work with your background.</p>
+          <a href="#cta" class="rc-link">Find housing <span aria-hidden="true">&rarr;</span></a>
+        </div>
 
-    async function fetchStatus() {
-      try {
-        const r = await fetch(API + '/status')
-        const json = await r.json()
-        const d = json.data
-        document.getElementById('status-bar').textContent = '✅ ' + d.app + ' is running — Modules: ' + d.modules.join(', ')
-      } catch (e) {
-        document.getElementById('status-bar').textContent = 'Server status unknown'
-      }
-    }
+        <div class="resource-card" data-color="green">
+          <div class="rc-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          </div>
+          <h3>Employment</h3>
+          <p>Felon-friendly employers, workforce training, resume help, and job placement services across industries.</p>
+          <a href="#cta" class="rc-link">Find work <span aria-hidden="true">&rarr;</span></a>
+        </div>
 
-    async function loadYard() {
-      try {
-        const r = await fetch(API + '/community')
-        const json = await r.json()
-        residents = json.data.residents
-        populateResidentSelects()
-        document.getElementById('residents-list').innerHTML = residents.map(function(res) {
-          return '<div class="card">' +
-            '<h3><span class="status-dot status-' + res.status + '"></span>' + res.displayName + ' <span class="badge badge-blue">Tier ' + res.tier + '</span></h3>' +
-            '<p>📋 ' + res.programGoal + '</p>' +
-            '<p style="margin-top:0.5rem">⭐ ' + res.goodTimeCredits + ' good-time credits &nbsp;|&nbsp; 👮 ' + res.caseManagerName + '</p>' +
-            '<p style="margin-top:0.5rem;font-style:italic;color:#666">"' + res.compatibilityNote + '"</p>' +
-            '</div>'
-        }).join('')
-      } catch (e) {
-        document.getElementById('residents-list').innerHTML = '<p>Could not load residents.</p>'
-      }
-    }
+        <div class="resource-card" data-color="purple">
+          <div class="rc-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          </div>
+          <h3>Legal Aid</h3>
+          <p>Expungement clinics, parole and probation support, record sealing, and free consultations with reentry attorneys.</p>
+          <a href="#cta" class="rc-link">Get legal help <span aria-hidden="true">&rarr;</span></a>
+        </div>
 
-    async function loadCommissary() {
-      try {
-        const r = await fetch(API + '/resources')
-        const json = await r.json()
-        document.getElementById('resources-list').innerHTML = json.data.resources.map(function(res) {
-          return '<div class="card">' +
-            '<h3>' + res.title + ' <span class="badge badge-green">' + res.format + '</span></h3>' +
-            '<p>📂 ' + res.displayArea + ' &nbsp;|&nbsp; 🔖 Saved by ' + res.savedCount + ' residents</p>' +
-            '</div>'
-        }).join('')
-      } catch (e) {
-        document.getElementById('resources-list').innerHTML = '<p>Could not load resources.</p>'
-      }
-    }
+        <div class="resource-card" data-color="amber">
+          <div class="rc-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </div>
+          <h3>Mental Health</h3>
+          <p>Counseling, substance use treatment, peer support groups, and crisis services &mdash; many available at no cost.</p>
+          <a href="#cta" class="rc-link">Get support <span aria-hidden="true">&rarr;</span></a>
+        </div>
 
-    async function loadKiteHistory() {
-      try {
-        const r = await fetch(API + '/messages')
-        const json = await r.json()
-        const msgs = json.data.messages
-        if (!msgs.length) {
-          document.getElementById('kite-history').innerHTML = '<p style="color:#888">No kites sent yet.</p>'
-          return
-        }
-        document.getElementById('kite-history').innerHTML = '<h3 style="margin-bottom:0.75rem">Sent Kites</h3>' + msgs.map(function(m) {
-          return '<div class="card">' +
-            '<p><strong>' + m.senderId + '</strong> → <strong>' + m.recipientId + '</strong></p>' +
-            '<p style="margin-top:0.5rem">' + m.body + '</p>' +
-            '<p style="margin-top:0.5rem;font-size:0.8rem;color:#888">Risk: <span class="' + (m.moderation.riskScore > 60 ? 'risk-high' : 'risk-low') + '">' + m.moderation.riskScore + '</span> &nbsp;|&nbsp; Status: ' + m.deliveryStatus + '</p>' +
-            '</div>'
-        }).join('')
-      } catch (e) {}
-    }
+        <div class="resource-card" data-color="teal">
+          <div class="rc-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+          </div>
+          <h3>Education</h3>
+          <p>GED programs, vocational training, college enrollment support, and scholarships for formerly incarcerated students.</p>
+          <a href="#cta" class="rc-link">Explore education <span aria-hidden="true">&rarr;</span></a>
+        </div>
 
-    function populateResidentSelects() {
-      const opts = residents.map(function(r) {
-        return '<option value="' + r.id + '">' + r.displayName + ' (' + r.cohortName + ')</option>'
-      }).join('')
-      ;['kite-from', 'kite-to', 'rc-resident'].forEach(function(id) {
-        const el = document.getElementById(id)
-        if (el) el.innerHTML = opts
-      })
-    }
+        <div class="resource-card" data-color="rose">
+          <div class="rc-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <h3>Community</h3>
+          <p>Mentorship programs, peer networks, family reunification support, and community events to rebuild connections.</p>
+          <a href="#cta" class="rc-link">Join the community <span aria-hidden="true">&rarr;</span></a>
+        </div>
 
-    async function sendKite() {
-      const senderId = document.getElementById('kite-from').value
-      const recipientId = document.getElementById('kite-to').value
-      const body = document.getElementById('kite-body').value.trim()
-      const statusEl = document.getElementById('kite-status')
-      if (!body) { statusEl.textContent = 'Write a message first.'; return }
-      try {
-        const r = await fetch(API + '/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ senderId: senderId, recipientId: recipientId, body: body })
-        })
-        const json = await r.json()
-        document.getElementById('kite-body').value = ''
-        if (json.data.deliveryStatus === 'approved') {
-          statusEl.innerHTML = '<span class="risk-low">✅ Kite delivered.</span>'
-        } else {
-          statusEl.innerHTML = '<span class="risk-high">⚠️ Kite sent to Mail Room for review.</span>'
-        }
-        loadKiteHistory()
-      } catch (e) {
-        statusEl.textContent = 'Failed to send kite.'
-      }
-    }
+      </div>
+    </div>
+  </section>
 
-    async function submitRollCall() {
-      const participantId = document.getElementById('rc-resident').value
-      const wellnessStatus = document.getElementById('rc-status').value
-      const supportNeed = document.getElementById('rc-note').value
-      const msg = document.getElementById('rc-status-msg')
-      try {
-        const r = await fetch(API + '/roll-call', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ participantId: participantId, wellnessStatus: wellnessStatus, supportNeed: supportNeed })
-        })
-        await r.json()
-        msg.innerHTML = '<span style="color:#28a745">✅ Roll call recorded.</span>'
-        document.getElementById('rc-note').value = ''
-        loadRollCall()
-      } catch (e) {
-        msg.textContent = 'Check-in failed.'
-      }
-    }
+  <!-- ===== HOW IT WORKS SECTION ===== -->
+  <section class="features" id="features">
+    <div class="features-bg">
+      <div class="features-orb" aria-hidden="true"></div>
+    </div>
+    <div class="section-inner">
+      <div class="section-header">
+        <span class="section-label">Simple Process</span>
+        <h2 class="section-title">Three Steps to<br>Your Fresh Start</h2>
+        <p class="section-sub">
+          No judgment. No complex forms. Just real help when you need it most.
+        </p>
+      </div>
 
-    async function loadRollCall() {
-      try {
-        const r = await fetch(API + '/roll-call')
-        const json = await r.json()
-        const entries = json.data.latest
-        if (entries.length) {
-          document.getElementById('rollcall-log').innerHTML = '<h3 style="margin-bottom:0.75rem">Recent Check-ins</h3>' + entries.map(function(e) {
-            return '<div class="card"><p><strong>' + e.participantId + '</strong> — ' + e.wellnessStatus + (e.supportNeed ? ' — ' + e.supportNeed : '') + '</p><p style="font-size:0.8rem;color:#888">' + new Date(e.createdAt).toLocaleString() + '</p></div>'
-          }).join('')
-        } else {
-          document.getElementById('rollcall-log').innerHTML = ''
-        }
-      } catch (e) {}
-    }
+      <div class="steps">
+        <div class="step">
+          <div class="step-number" aria-hidden="true">01</div>
+          <div class="step-content">
+            <h3>Tell Us Where You Are</h3>
+            <p>Enter your zip code or city to find resources and support organizations in your area. Your location is never stored or shared.</p>
+          </div>
+          <div class="step-connector" aria-hidden="true"></div>
+        </div>
+        <div class="step">
+          <div class="step-number" aria-hidden="true">02</div>
+          <div class="step-content">
+            <h3>Choose Your Priorities</h3>
+            <p>Select the areas where you need the most help &mdash; housing, work, legal aid, or mental health. We&rsquo;ll build a personalized resource list for you.</p>
+          </div>
+          <div class="step-connector" aria-hidden="true"></div>
+        </div>
+        <div class="step">
+          <div class="step-number" aria-hidden="true">03</div>
+          <div class="step-content">
+            <h3>Connect and Move Forward</h3>
+            <p>Get direct contact information, application links, and in some cases direct introductions to case workers ready to help you today.</p>
+          </div>
+        </div>
+      </div>
 
-    fetchStatus()
-    loadYard()
-    loadCommissary()
-    loadKiteHistory()
-    loadRollCall()
-  </script>
+      <div class="testimonials">
+        <div class="testimonial-card">
+          <div class="testimonial-quote" aria-hidden="true">&ldquo;</div>
+          <p class="testimonial-text">
+            I got out after 8 years with nothing but a bus ticket. New Horizon connected me with a
+            transitional house and a job at a warehouse in the same week. I just got promoted.
+          </p>
+          <div class="testimonial-author">
+            <div class="author-avatar" aria-hidden="true">MJ</div>
+            <div>
+              <strong>Marcus J.</strong>
+              <span>Chicago, IL &mdash; Released 2023</span>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-quote" aria-hidden="true">&ldquo;</div>
+          <p class="testimonial-text">
+            The expungement clinic they connected me with got two charges off my record. I can now
+            apply for nursing jobs again. This platform changed everything for me.
+          </p>
+          <div class="testimonial-author">
+            <div class="author-avatar" aria-hidden="true">TR</div>
+            <div>
+              <strong>Tamara R.</strong>
+              <span>Atlanta, GA &mdash; Released 2022</span>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-quote" aria-hidden="true">&ldquo;</div>
+          <p class="testimonial-text">
+            I was embarrassed to ask for help. The peer support program matched me with someone
+            who had been in my exact situation. Knowing I wasn&rsquo;t alone made all the difference.
+          </p>
+          <div class="testimonial-author">
+            <div class="author-avatar" aria-hidden="true">DW</div>
+            <div>
+              <strong>Devon W.</strong>
+              <span>Houston, TX &mdash; Released 2024</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CTA / FOOTER SECTION ===== -->
+  <section class="cta-section" id="cta">
+    <div class="cta-bg" aria-hidden="true">
+      <div class="cta-orb cta-orb-1"></div>
+      <div class="cta-orb cta-orb-2"></div>
+    </div>
+    <div class="cta-inner">
+      <div class="cta-badge">Ready When You Are</div>
+      <h2 class="cta-title">Take the First Step.<br>We&rsquo;ll Handle the Rest.</h2>
+      <p class="cta-sub">
+        Join thousands of people who found housing, work, and community through New Horizon.
+        It&rsquo;s free, confidential, and available 24/7.
+      </p>
+      <form class="cta-form" id="cta-form" novalidate>
+        <div class="form-row">
+          <div class="form-field">
+            <label for="zip">Your Zip Code</label>
+            <input type="text" id="zip" name="zip" placeholder="e.g. 60601" maxlength="10" autocomplete="postal-code">
+          </div>
+          <div class="form-field">
+            <label for="need">Primary Need</label>
+            <select id="need" name="need">
+              <option value="">Select a need...</option>
+              <option value="housing">Housing</option>
+              <option value="employment">Employment</option>
+              <option value="legal">Legal Aid</option>
+              <option value="mental-health">Mental Health</option>
+              <option value="education">Education</option>
+              <option value="community">Community Support</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary cta-submit">
+            <span>Find My Resources</span>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="18" height="18" aria-hidden="true"><path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd"/></svg>
+          </button>
+        </div>
+        <p class="form-note">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="14" height="14" aria-hidden="true"><path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd"/></svg>
+          100% confidential. We never sell or share your information.
+        </p>
+        <div id="form-message" class="form-message" aria-live="polite"></div>
+      </form>
+
+      <div class="trust-logos">
+        <span class="trust-label">Trusted by organizations across the country</span>
+        <div class="trust-badges">
+          <div class="trust-badge">Second Chance Alliance</div>
+          <div class="trust-badge">National Reentry Council</div>
+          <div class="trust-badge">Justice Forward</div>
+          <div class="trust-badge">Fair Chance Initiative</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <a href="#" class="nav-logo">
+          <span class="logo-icon" aria-hidden="true">&#9670;</span>
+          New Horizon
+        </a>
+        <p>Empowering returning citizens with the tools and connections they need for a lasting fresh start.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="#resources">Housing</a></li>
+          <li><a href="#resources">Employment</a></li>
+          <li><a href="#resources">Legal Aid</a></li>
+          <li><a href="#resources">Mental Health</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Platform</h4>
+        <ul>
+          <li><a href="#features">How It Works</a></li>
+          <li><a href="#cta">Get Started</a></li>
+          <li><a href="#home">About Us</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Support</h4>
+        <ul>
+          <li><a href="mailto:help@newhorizon.app">Contact Us</a></li>
+          <li><a href="#home">Privacy Policy</a></li>
+          <li><a href="#home">Terms of Service</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2025 New Horizon. All rights reserved.</p>
+      <p class="footer-mission">Built with purpose &mdash; for those ready for what comes next.</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
 </body>
 </html>
