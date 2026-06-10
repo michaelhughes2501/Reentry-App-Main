@@ -1,22 +1,36 @@
-import express from 'express';
-import Database from 'better-sqlite3';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import cors from 'cors';
-import path from 'path';
-import { fileURLToPath } from 'url';
+const express = require('express');
+const Database = require('better-sqlite3');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const cors = require('cors');
+const path = require('path');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'reentry-app-dev-secret-2024';
+
+// Middleware to log requests - this will help you see if the frontend hits /register instead of /login
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api')) console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
+
+app.use(helmet());
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+});
+app.use('/api/', limiter);
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Init DB
-const db = new Database(path.join(__dirname, 'reentry.db'));
+const dbPath = path.join(__dirname, 'reentry.db');
+const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
 
 db.exec(`
@@ -111,8 +125,9 @@ function auth(req, res, next) {
 // --- AUTH ---
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { name, email, password, location, release_date } = req.body;
-    if (!name || !email || !password) return res.status(400).json({ error: 'Name, email and password required' });
+    const { email, password, location, release_date } = req.body;
+    const name = req.body.name || req.body.displayName; // Handle both naming conventions
+    if (!name || !email || !password) return res.status(400).json({ error: 'Registration failed: name, email, and password are all required.' });
     const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
     if (existing) return res.status(409).json({ error: 'Email already registered' });
     const hash = await bcrypt.hash(password, 12);
@@ -128,6 +143,8 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Login failed: Email and password are required.' });
+
     const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
     const ok = await bcrypt.compare(password, user.password_hash);
@@ -188,7 +205,7 @@ app.post('/api/housing', (req, res) => {
 // --- COMMUNITY ---
 app.get('/api/community', (req, res) => {
   const rows = db.prepare(`
-    SELECT cp.*, u.username, u.name as author_name
+    SELECT cp.*, u.name as username, u.name as author_name, u.name as "displayName"
     FROM community_posts cp
     LEFT JOIN users u ON cp.user_id = u.id
     ORDER BY cp.created_at DESC
