@@ -1,0 +1,20 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package.json package-lock.json* pnpm-lock.yaml* ./
+RUN npm ci --frozen-lockfile || npm install
+
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S appuser -u 1001 && \
+    chown -R appuser:nodejs /app
+
+COPY --chown=appuser:nodejs . .
+
+USER appuser
+
+ENV NODE_ENV=development
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]
