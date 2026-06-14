@@ -1,11 +1,16 @@
-const express = require('express');
-const Database = require('better-sqlite3');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const cors = require('cors');
-const path = require('path');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
+import express from 'express';
+import Database from 'better-sqlite3';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import cors from 'cors';
+import path from 'path';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import { fileURLToPath, pathToFileURL } from 'url';
+
+// ESM has no __dirname — derive it from import.meta.url.
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -28,10 +33,10 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Init DB
-const dbPath = path.join(__dirname, 'reentry.db');
+// Init DB. DB_PATH lets tests use an in-memory database (':memory:').
+const dbPath = process.env.DB_PATH || path.join(__dirname, 'reentry.db');
 const db = new Database(dbPath);
-db.pragma('journal_mode = WAL');
+if (dbPath !== ':memory:') db.pragma('journal_mode = WAL');
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -245,317 +250,23 @@ app.post('/api/rollcall', auth, (req, res) => {
   }
 });
 
-  sendError(req, res, 400, 'VALIDATION_ERROR', 'Please review the highlighted fields and try again.', {
-    fields: errors.array().map((error) => ({
-      field: error.path,
-      message: error.msg
-    }))
-  });
-}
+// Unmatched /api routes return JSON 404 (not the SPA shell).
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'Not found' });
+});
 
-function createApp(dbClient = supabase) {
-  const app = express();
-
-  // Middleware to verify Supabase JWT
-  const authenticate = async (req, res, next) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return sendError(req, res, 401, 'UNAUTHORIZED', 'Bearer token required.');
-    }
-
-    const token = authHeader.split(' ')[1];
-    const { data: { user }, error } = await dbClient.auth.getUser(token);
-
-    if (error || !user) {
-      return sendError(req, res, 401, 'UNAUTHORIZED', 'Session invalid or expired.');
-    }
-
-    req.user = user; // Attach user to request for use in routes
-    next();
-  };
-
-  app.use((req, res, next) => {
-    req.requestId = `req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-    next();
-  });
-
-  app.use(helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'"],
-        styleSrc: ["'self'", 'https://fonts.googleapis.com'],
-        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-        imgSrc: ["'self'", 'data:'],
-        connectSrc: ["'self'"],
-        objectSrc: ["'none'"],
-        baseUri: ["'self'"],
-        frameAncestors: ["'none'"]
-      }
-    }
-  }));
-
-  app.use(cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-    methods: ['GET', 'POST'],
-    optionsSuccessStatus: 204
-  }));
-
-  app.use(express.json({ limit: '1mb' }));
-  app.use(hpp());
-
-  const limiter = rateLimit({
-    windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-    max: Number(process.env.RATE_LIMIT_MAX) || 100,
-    standardHeaders: 'draft-8',
-    legacyHeaders: false
-  });
-
-  // Apply authentication and rate limiting to all /api routes
-  app.use('/api', authenticate, limiter);
-  app.use(express.static(path.join(__dirname, 'public')));
-
-  app.get('/api/status', (req, res) => {
-    sendSuccess(req, res, {
-      status: 'secure',
-      app: 'ReentryApp',
-      environment: process.env.NODE_ENV || 'development',
-      modules: ['The Yard', 'Kites', 'Roll Call', 'Commissary', 'Mail Room']
-    });
-  });
-
-  app.get('/api/community', async (req, res) => {
-    // Example: Fetching residents from Supabase 'participants' table
-    const { data: residents, error } = await dbClient
-      .from('participants')
-      .select('*');
-
-    if (error) {
-      return sendError(req, res, 500, 'DATABASE_ERROR', error.message);
-    }
-
-    sendSuccess(req, res, {
-      displayArea: 'The Yard',
-      residents: residents || [],
-      leaderboard: (residents || [])
-        .sort((a, b) => (b.goodTimeCredits || 0) - (a.goodTimeCredits || 0)),
-      activeBlocks: [
-        { id: 'block-housing', name: 'Housing Readiness', residentCount: 18 },
-        { id: 'block-work', name: 'Work Detail Prep', residentCount: 24 },
-        { id: 'block-wellness', name: 'Rec Yard Reset', residentCount: 16 }
-      ]
-    });
-  });
-
-  app.get('/api/resources', async (req, res) => {
-    const { data, error } = await dbClient
-      .from('resources')
-      .select('*');
-
-    if (error) {
-      return sendError(req, res, 500, 'DATABASE_ERROR', error.message);
-    }
-
-    sendSuccess(req, res, {
-      displayArea: 'Commissary',
-      resources: data || []
-    });
-  });
-
-  app.get('/api/moderation/queue', async (req, res) => {
-    const { data, error } = await dbClient
-      .from('moderation_queue')
-      .select('*')
-      .order('createdAt', { ascending: false });
-
-    if (error) {
-      return sendError(req, res, 500, 'DATABASE_ERROR', error.message);
-    }
-
-    sendSuccess(req, res, {
-      displayArea: 'Mail Room',
-      pendingCount: (data || []).filter((item) => item.status === 'pending').length,
-      items: data || []
-    });
-  });
-
-  app.put(
-    '/api/moderation/queue/:id',
-    [
-      body('status').isIn(['approved', 'rejected']).withMessage('Status must be approved or rejected.')
-    ],
-    validateRequest,
-    async (req, res) => {
-      const { id } = req.params;
-      const { status } = req.body;
-
-      const { data, error } = await dbClient
-        .from('moderation_queue')
-        .update({ status })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        return sendError(req, res, 500, 'DATABASE_ERROR', error.message);
-      }
-
-      if (!data) return sendError(req, res, 404, 'NOT_FOUND', 'Moderation item not found.');
-
-      sendSuccess(req, res, data);
-    }
-  );
-
-  app.get('/api/roll-call', async (req, res) => {
-    const { data, error } = await dbClient
-      .from('roll_call_log')
-      .select('*')
-      .order('createdAt', { ascending: false })
-      .limit(5);
-
-    if (error) return sendError(req, res, 500, 'DATABASE_ERROR', error.message);
-
-    sendSuccess(req, res, {
-      displayArea: 'Roll Call',
-      latest: data || []
-    });
-  });
-
-  app.post(
-    '/api/roll-call',
-    [
-      body('participantId').isString().trim().notEmpty().withMessage('Resident selection is required.'),
-      body('wellnessStatus').isIn(['steady', 'needs_support', 'urgent']).withMessage('Choose a current status.'),
-      body('supportNeed').optional({ values: 'falsy' }).isString().trim().isLength({ max: 500 }).withMessage('Keep support notes under 500 characters.')
-    ],
-    validateRequest,
-    async (req, res) => {
-      const { data: resident, error: checkError } = await dbClient
-        .from('participants')
-        .select('id')
-        .eq('id', req.body.participantId)
-        .single();
-
-      if (checkError || !resident) {
-        sendError(req, res, 404, 'RESIDENT_NOT_FOUND', 'That Resident could not be found.', {
-          participantId: req.body.participantId
-        });
-        return;
-      }
-
-      const entry = {
-        id: crypto.randomUUID(),
-        participantId: resident.id,
-        wellnessStatus: req.body.wellnessStatus,
-        supportNeed: req.body.supportNeed || '',
-        createdAt: new Date().toISOString()
-      };
-
-      const { error: insertError } = await dbClient.from('roll_call_log').insert(entry);
-
-      if (insertError) {
-        return sendError(req, res, 500, 'DATABASE_ERROR', insertError.message);
-      }
-
-      sendSuccess(req, res, entry, 201);
-    }
-  );
-
-  app.post(
-    '/api/messages',
-    [
-      body('senderId').isString().trim().notEmpty().withMessage('Sender is required.'),
-      body('recipientId').isString().trim().notEmpty().withMessage('Recipient is required.'),
-      body('body').isString().trim().isLength({ min: 1, max: 1000 }).withMessage('Kites must be 1 to 1000 characters.')
-    ],
-    validateRequest,
-    async (req, res) => {
-      const { data: actors, error: actorsError } = await dbClient
-        .from('participants')
-        .select('id')
-        .in('id', [req.body.senderId, req.body.recipientId]);
-
-      const sender = actors?.find(a => a.id === req.body.senderId);
-      const recipient = actors?.find(a => a.id === req.body.recipientId);
-
-      if (!sender || !recipient) {
-        sendError(req, res, 404, 'RESIDENT_NOT_FOUND', 'Sender or recipient could not be found.', {
-          senderId: req.body.senderId,
-          recipientId: req.body.recipientId
-        });
-        return;
-      }
-
-      const scan = moderationScan(req.body.body);
-      const message = {
-        id: crypto.randomUUID(),
-        senderId: sender.id,
-        recipientId: recipient.id,
-        body: req.body.body,
-        moderation: scan,
-        deliveryStatus: scan.action === 'allow' ? 'approved' : 'mail_room',
-        createdAt: new Date().toISOString()
-      };
-
-      const { error: msgError } = await dbClient.from('messages').insert(message);
-      if (msgError) {
-        return sendError(req, res, 500, 'DATABASE_ERROR', msgError.message);
-      }
-
-      if (scan.action === 'requires_review') {
-        const { error: revError } = await dbClient.from('moderation_queue').insert({
-          id: crypto.randomUUID(),
-          sourceType: 'message',
-          submittedBy: sender.id,
-          riskScore: scan.riskScore,
-          status: 'pending',
-          displayArea: 'Mail Room',
-          reason: 'Automated Shakedown requested staff review.'
-        });
-      }
-
-      sendSuccess(req, res, message, 201);
-    }
-  );
-
-  app.get('/api/messages', async (req, res) => {
-    const { data, error } = await dbClient
-      .from('messages')
-      .select('*')
-      .order('createdAt', { ascending: false });
-
-    if (error) return sendError(req, res, 500, 'DATABASE_ERROR', error.message);
-
-    sendSuccess(req, res, {
-      displayArea: 'Kites',
-      messages: data || []
-    });
-  });
-
-  app.use('/api', (req, res) => {
-    sendError(req, res, 404, 'NOT_FOUND', 'That API route is not available.');
-  });
-
-  app.use((req, res, next) => {
-    if (req.method !== 'GET') return next();
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-  });
-
-  return app;
-}
-
-const app = createApp();
-
-if (require.main === module) {
-  const PORT = process.env.PORT || 3000;
-// SPA fallback — Express 5 / path-to-regexp v8 rejects the bare '*' string;
-// use a RegExp catch-all instead.
+// SPA fallback — serve index.html for any non-API GET. Express 5 / path-to-regexp
+// v8 rejects the bare '*' string, so match with a RegExp catch-all.
 app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`ReentryApp running on http://localhost:${PORT}`);
-});
+// Boot only when run directly (`node server.js`), not when imported by tests.
+const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isMain) {
+  app.listen(PORT, () => {
+    console.log(`ReentryApp running on http://localhost:${PORT}`);
+  });
+}
 
 export default app;

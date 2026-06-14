@@ -1,163 +1,100 @@
-const { createApp, moderationScan } = require('../server')
+// Smoke tests for the ReentryApp API (better-sqlite3 + Express).
+// Uses Node's built-in test runner — no jest/supertest needed:
+//   npm test   ->   node --test
+//
+// DB_PATH=:memory: keeps the suite from touching the on-disk reentry.db.
+process.env.DB_PATH = ':memory:';
+process.env.JWT_SECRET = 'test-secret';
 
-describe('moderationScan', () => {
-  it('returns low risk for benign message', () => {
-    const result = moderationScan('Hello, how are you doing today?')
-    expect(result.riskScore).toBeLessThan(60)
-    expect(result.action).toBe('allow')
-  })
+import test from 'node:test';
+import assert from 'node:assert/strict';
+// Dynamic import so the env vars above are set BEFORE server.js reads them at
+// module load. A static `import` is hoisted and would run first, making the
+// suite hit the on-disk reentry.db instead of the in-memory database.
+const { default: app } = await import('../server.js');
 
-  it('flags self-harm content', () => {
-    const result = moderationScan('I want to kill myself')
-    expect(result.riskScore).toBeGreaterThanOrEqual(60)
-    expect(result.action).toBe('requires_review')
-    expect(result.flaggedCategories).toContain('self_harm')
-  })
+// Start the app on an ephemeral port for the duration of the suite.
+let server;
+let base;
 
-  it('flags violence content', () => {
-    const result = moderationScan('I will attack them with a weapon')
-    expect(result.riskScore).toBeGreaterThanOrEqual(60)
-    expect(result.action).toBe('requires_review')
-  })
-})
+test.before(async () => {
+  await new Promise((resolve) => {
+    server = app.listen(0, () => {
+      base = `http://127.0.0.1:${server.address().port}`;
+      resolve();
+    });
+  });
+});
 
-describe('API routes', () => {
-  let app, request
+test.after(() => server?.close());
 
-  // Define a mock Supabase client
-  const mockSupabase = {
-    auth: {
-      getUser: (token) => {
-        if (token === 'valid-token') {
-          return Promise.resolve({ data: { user: { id: 'test-user-uuid' } }, error: null });
-        }
-        return Promise.resolve({ data: { user: null }, error: { message: 'Invalid token' } });
-      }
-    },
-    from: (table) => {
-      const chain = {
-        select: () => chain,
-        order: () => chain,
-        limit: () => chain,
-        eq: () => chain,
-        single: () => Promise.resolve({ data: { id: 'review-701', status: 'approved' }, error: null }),
-        in: () => chain,
-        update: () => chain,
-        insert: () => Promise.resolve({ error: null }),
-        then: (onSuccess) => onSuccess({
-          data: table === 'moderation_queue'
-            ? [
-                { id: 'rev-1', status: 'pending', sourceType: 'message', reason: 'Flagged word' },
-                { id: 'rev-2', status: 'approved', sourceType: 'message', reason: 'Manual review' },
-                { id: 'rev-3', status: 'pending', sourceType: 'message', reason: 'High risk score' }
-              ]
-            : [
-                { id: 'res-101', displayName: 'Marcus J.', goodTimeCredits: 184 },
-                { id: 'res-204', displayName: 'Tanya R.', goodTimeCredits: 142 },
-                { id: 'res-319', displayName: 'Devon K.', goodTimeCredits: 221 }
-              ],
-          error: null
-        })
-      };
-      return chain;
-    }
-  };
+test('GET /api/resources returns the seeded resources', async () => {
+  const res = await fetch(`${base}/api/resources`);
+  assert.equal(res.status, 200);
+  const rows = await res.json();
+  assert.ok(Array.isArray(rows));
+  assert.ok(rows.length >= 6, 'expected the seed rows to be present');
+});
 
-  beforeAll(() => {
-    app = createApp(mockSupabase)
-    request = require('supertest')(app)
-  })
+test('register + login issues a JWT', async () => {
+  const creds = { name: 'Test User', email: 'test@example.com', password: 'pw-12345' };
 
-  it('GET /api/status returns 200', async () => {
-    const res = await request.get('/api/status').set('Authorization', 'Bearer valid-token')
-    expect(res.status).toBe(200)
-    expect(res.body.success).toBe(true)
-    expect(res.body.data.app).toBe('ReentryApp')
-  })
+  const reg = await fetch(`${base}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(creds),
+  });
+  assert.equal(reg.status, 200);
+  const regBody = await reg.json();
+  assert.ok(regBody.token, 'register should return a token');
 
-  it('GET /api/status returns 401 without token', async () => {
-    const res = await request.get('/api/status')
-    expect(res.status).toBe(401)
-    expect(res.body.error.code).toBe('UNAUTHORIZED')
-  })
+  const login = await fetch(`${base}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email: creds.email, password: creds.password }),
+  });
+  assert.equal(login.status, 200);
+  const loginBody = await login.json();
+  assert.ok(loginBody.token, 'login should return a token');
+  assert.equal(loginBody.user.email, creds.email);
+});
 
-  it('GET /api/community returns residents', async () => {
-    const res = await request.get('/api/community').set('Authorization', 'Bearer valid-token')
-    expect(res.status).toBe(200)
-    expect(res.body.data.residents).toHaveLength(3)
-  })
+test('register rejects missing fields with 400', async () => {
+  const res = await fetch(`${base}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email: 'x@example.com' }),
+  });
+  assert.equal(res.status, 400);
+});
 
-  it('GET /api/moderation/queue returns the current queue', async () => {
-    const res = await request.get('/api/moderation/queue').set('Authorization', 'Bearer valid-token')
-    expect(res.status).toBe(200)
-    expect(res.body.success).toBe(true)
-    expect(res.body.data.displayArea).toBe('Mail Room')
-    expect(res.body.data).toHaveProperty('pendingCount')
-    expect(res.body.data.pendingCount).toBe(2) // We mocked 2 pending items
-  })
+test('protected route /api/rollcall requires a token', async () => {
+  const res = await fetch(`${base}/api/rollcall`);
+  assert.equal(res.status, 401);
+});
 
-  it('GET /api/resources returns resources', async () => {
-    const res = await request.get('/api/resources').set('Authorization', 'Bearer valid-token')
-    expect(res.status).toBe(200)
-    expect(res.body.data.resources.length).toBeGreaterThan(0)
-  })
+test('roll-call check-in works with a valid token, blocks duplicates', async () => {
+  // Register a fresh user to get a token.
+  const reg = await fetch(`${base}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Roll Caller', email: 'roll@example.com', password: 'pw-12345' }),
+  });
+  const { token } = await reg.json();
+  const headers = { 'content-type': 'application/json', authorization: `Bearer ${token}` };
 
-  it('POST /api/roll-call with valid data returns 201', async () => {
-    const res = await request
-      .post('/api/roll-call')
-      .set('Authorization', 'Bearer valid-token')
-      .send({
-        participantId: 'res-101',
-        wellnessStatus: 'steady',
-        supportNeed: 'none'
-      })
-    expect(res.status).toBe(201)
-    expect(res.body.success).toBe(true)
-  })
+  const first = await fetch(`${base}/api/rollcall`, { method: 'POST', headers, body: JSON.stringify({ location: 'Home' }) });
+  assert.equal(first.status, 200);
+  const firstBody = await first.json();
+  assert.equal(firstBody.success, true);
 
-  it('POST /api/roll-call with invalid status returns 400', async () => {
-    const res = await request
-      .post('/api/roll-call')
-      .set('Authorization', 'Bearer valid-token')
-      .send({
-        participantId: 'res-101',
-        wellnessStatus: 'invalid-status'
-      })
-    expect(res.status).toBe(400)
-  })
+  // Second check-in on the same day is rejected as a duplicate.
+  const second = await fetch(`${base}/api/rollcall`, { method: 'POST', headers, body: JSON.stringify({ location: 'Home' }) });
+  assert.equal(second.status, 409);
+});
 
-  it('PUT /api/moderation/queue/:id updates status', async () => {
-    const res = await request
-      .put('/api/moderation/queue/review-701')
-      .set('Authorization', 'Bearer valid-token')
-      .send({
-        status: 'approved'
-      })
-    expect(res.status).toBe(200)
-    expect(res.body.data.status).toBe('approved')
-  })
-
-  it('PUT /api/moderation/queue/:id with invalid status returns 400', async () => {
-    const res = await request
-      .put('/api/moderation/queue/review-701')
-      .set('Authorization', 'Bearer valid-token')
-      .send({
-        status: 'invalid-status'
-      })
-    expect(res.status).toBe(400)
-    expect(res.body.error.code).toBe('VALIDATION_ERROR')
-  })
-
-  it('POST /api/messages with flagged content triggers moderation', async () => {
-    const res = await request
-      .post('/api/messages')
-      .set('Authorization', 'Bearer valid-token')
-      .send({
-        senderId: 'res-101',
-        recipientId: 'res-204',
-        body: 'I will attack them with a weapon'
-      })
-    expect(res.status).toBe(201)
-    expect(res.body.data.deliveryStatus).toBe('mail_room')
-  })
-})
+test('unknown /api route returns JSON 404, not the SPA shell', async () => {
+  const res = await fetch(`${base}/api/does-not-exist`);
+  assert.equal(res.status, 404);
+  assert.match(res.headers.get('content-type') || '', /application\/json/);
+});

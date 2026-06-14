@@ -2,6 +2,8 @@
 FROM node:20-alpine AS deps
 
 WORKDIR /app
+RUN apk add --no-cache python3 make g++
+RUN npm install -g npm@11.17.0
 COPY package.json package-lock.json* pnpm-lock.yaml* ./
 RUN npm ci --frozen-lockfile || npm install
 

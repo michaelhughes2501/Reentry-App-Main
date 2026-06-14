@@ -7,6 +7,11 @@ dist/
 build/
 .vscode/*.local
 
+# better-sqlite3 runtime database (regenerated on boot, WAL sidecars)
+*.db
+*.db-wal
+*.db-shm
+
 
 #Ignore vscode AI rules
 .github\instructions\codacy.instructions.md
