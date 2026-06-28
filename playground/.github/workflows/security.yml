@@ -1,0 +1,52 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Security workflow
+# Runs on every push/PR and on a weekly schedule.
+# Audits npm dependencies for known vulnerabilities.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Security Audit
+
+on:
+  push:
+    branches:
+      - main
+      - development
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: "0 8 * * 1"   # every Monday at 08:00 UTC
+
+jobs:
+  audit:
+    name: npm audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # npm audit exits non-zero on high/critical — this makes the job fail
+      # and notifies you via GitHub.  Lower --audit-level to "moderate" if needed.
+      - name: Audit for vulnerabilities
+        run: npm audit --audit-level=high
+
+      # Optional: check for outdated packages (informational only, never fails)
+      - name: Check for outdated packages
+        run: npm outdated || true
+
+      - name: Security summary
+        if: always()
+        run: |
+          echo "## 🔒 Security audit" >> $GITHUB_STEP_SUMMARY
+          echo "- Run at: \`$(date -u)\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Audit level: **high**" >> $GITHUB_STEP_SUMMARY

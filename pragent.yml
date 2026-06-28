@@ -1,0 +1,9 @@
+# PR coordinator config (stack: node)
+fail_on: high
+required_files:
+  - "README*"
+  - ".gitignore"
+  - "package.json"
+expected_dirs: []
+auto_fix:
+  enabled: false

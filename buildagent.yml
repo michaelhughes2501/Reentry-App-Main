@@ -1,0 +1,3 @@
+# Build agent config (stack: node)
+# validate-only by default; flip to true once build env/secrets are wired.
+run_build: false

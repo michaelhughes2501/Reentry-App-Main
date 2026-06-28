@@ -1,0 +1,77 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Option 5 — AI → GitHub → ZIP pipeline
+# Runs on every push to main or development.
+# Steps: install → lint → test → build → zip → upload artifact
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Build & Package
+
+on:
+  push:
+    branches:
+      - main
+      - development
+  pull_request:
+    branches:
+      - main
+      - development
+
+jobs:
+  build:
+    name: Install · Lint · Test · Build · ZIP
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Check out the repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Set up Node.js
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm          # cache node_modules between runs
+
+      # 3. Install dependencies
+      - name: Install dependencies
+        run: npm ci           # clean install — respects package-lock.json
+
+      # 4. Lint (fail the build on lint errors)
+      - name: Run linter
+        run: npm run lint
+
+      # 5. Tests (continue even on failure so the ZIP is still produced)
+      - name: Run tests
+        run: npm test
+        continue-on-error: true
+
+      # 6. Build
+      - name: Build project
+        run: npm run build
+
+      # 7. Create ZIP — exclude git metadata, node_modules, and test artefacts
+      - name: Create release ZIP
+        run: |
+          zip -r project-build.zip . \
+            -x "*.git*"          \
+            -x "node_modules/*"  \
+            -x "coverage/*"      \
+            -x ".env*"           \
+            -x "*.log"
+
+      # 8. Upload ZIP as a downloadable GitHub Actions artifact (kept 7 days)
+      - name: Upload ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-build-${{ github.sha }}
+          path: project-build.zip
+          retention-days: 7
+
+      # 9. Print a summary so it shows up in the Actions run summary
+      - name: Job summary
+        run: |
+          echo "## ✅ Build complete" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Artifact: \`production-build-${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY

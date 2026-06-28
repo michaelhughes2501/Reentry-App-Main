@@ -1,0 +1,120 @@
+name: Build Production
+
+# Cheap validation on every PR, full builds when build- or dependency-relevant
+# files change. This is the realistic implementation of "make sure files are
+# built properly": event-driven, fast feedback, with a real build behind it
+# when it matters — including when a dependency PR could break the build.
+on:
+  pull_request:
+  push:
+    branches: [main, master, develop]
+  workflow_dispatch:
+  # Allow the dependency-check workflow (or anything else) to trigger us.
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    # Fast pass on every PR — config validity, declared entries exist, scripts present.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install agent deps
+        run: pip install pyyaml
+      - name: Install project deps (so webpack inspector can require plugins)
+        run: |
+          if [ -f package-lock.json ]; then npm ci --ignore-scripts; \
+          elif [ -f package.json ]; then npm install --ignore-scripts; \
+          else echo "no package.json — skipping npm install"; fi
+      - name: Run build-agent (validate only)
+        run: python -m buildagent.run --path . --no-build
+      - name: Upload validation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-reports-validate
+          path: agent-reports/
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------------
+  # Decide whether the full build should run on THIS event.
+  # The logic is explicit and readable rather than crammed into one `if:`.
+  # ---------------------------------------------------------------------------
+  should-build:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2     # need previous SHA to diff PRs
+      - id: decide
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          run=false
+
+          case "$EVENT_NAME" in
+            push|workflow_dispatch|workflow_call)
+              run=true ;;
+            pull_request)
+              if echo "$PR_LABELS" | grep -q '"run-build"'; then
+                run=true
+              else
+                changed="$(git diff --name-only "$PR_BASE_SHA" "$PR_HEAD_SHA" || true)"
+                echo "Changed files:"; echo "$changed"
+                if echo "$changed" | grep -E -q \
+                  '(^|/)(src/|theme/|webpack\.config\.|package(-lock)?\.json|pyproject\.toml|requirements\.txt|setup\.py)'; then
+                  run=true
+                fi
+              fi ;;
+          esac
+
+          echo "Decision: run=$run"
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: [validate, should-build]
+    if: needs.should-build.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - name: Install agent deps
+        run: pip install pyyaml
+      - name: Install project deps
+        run: |
+          if [ -f package-lock.json ]; then npm ci; \
+          elif [ -f package.json ]; then npm install; fi
+      - name: Run build-agent (full build)
+        run: python -m buildagent.run --path . --build
+      - name: Upload build report + artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          # Unique artifact name per job (GitHub Actions v4 forbids name collisions
+          # within one workflow). Agent 5 downloads with a pattern to grab them all.
+          name: agent-reports-build
+          path: |
+            agent-reports/
+            theme/assets/
+          if-no-files-found: ignore

@@ -1,0 +1,140 @@
+name: PR Agent
+
+# Two triggers, two roles:
+#   1) pull_request — fast verdict from this agent's own structural checks.
+#   2) workflow_run — fires AFTER the security/dependency/build workflows
+#      finish on the same SHA, then downloads their reports and re-posts an
+#      updated, aggregated verdict on the PR.
+#
+# The pull_request job posts the FIRST verdict (often clean — structure only).
+# The workflow_run job posts the FULL verdict once the other agents' artifacts
+# are available. The agent updates its existing comment in place, not spams.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+  workflow_run:
+    workflows: ["Security & YAML Scan", "Dependency & Health Check", "Build Production"]
+    types: [completed]
+  schedule:
+    - cron: "0 7 * * 1"   # weekly Monday 07:00 UTC multi-repo sweep
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pull-requests: write
+  statuses: write
+  actions: read           # needed for workflow_run to download other workflows' artifacts
+
+jobs:
+  # --------- Fast structural verdict on every PR -------------------------
+  verdict:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install pyyaml
+      - name: Run PR agent (structural only)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+        run: python -m pragent.run --config pragent.yml
+
+  # --------- Aggregated verdict after sibling agents finish --------------
+  aggregate:
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install pyyaml
+
+      # Download every agent's reports for this workflow_run.
+      # Each sibling workflow uploads under a unique name (agent-reports-deps,
+      # agent-reports-build, agent-reports-validate, etc.); the `pattern` option
+      # downloads them all and `merge-multiple` flattens them into one directory.
+      - name: Download sibling reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: agent-reports-*
+          merge-multiple: true
+          path: agent-reports
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      # Reconstruct the pull_request event payload from the workflow_run context
+      # so the PR agent can update the correct PR's comment/status.
+      - name: Build PR event payload
+        id: payload
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -euo pipefail
+          # Find the open PR whose head SHA matches the workflow_run.
+          pr_json=$(gh pr list --state open --json number,headRefOid,headRefName,title,baseRefName,additions,deletions,changedFiles \
+            --jq ".[] | select(.headRefOid == \"$HEAD_SHA\")")
+          if [ -z "$pr_json" ]; then
+            echo "no open PR matches head sha $HEAD_SHA; skipping"
+            echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          number=$(echo "$pr_json"   | python -c "import sys,json;print(json.load(sys.stdin)['number'])")
+          title=$(echo "$pr_json"    | python -c "import sys,json;print(json.load(sys.stdin)['title'])")
+          base=$(echo "$pr_json"     | python -c "import sys,json;print(json.load(sys.stdin)['baseRefName'])")
+          adds=$(echo "$pr_json"     | python -c "import sys,json;print(json.load(sys.stdin)['additions'])")
+          dels=$(echo "$pr_json"     | python -c "import sys,json;print(json.load(sys.stdin)['deletions'])")
+          changed=$(echo "$pr_json"  | python -c "import sys,json;print(json.load(sys.stdin)['changedFiles'])")
+          # Synthesize a minimal pull_request event the agent's runner accepts.
+          cat > "$GITHUB_WORKSPACE/.synthetic_event.json" <<JSON
+          {
+            "pull_request": {
+              "number": $number,
+              "title": $(python -c "import json,sys;print(json.dumps(sys.argv[1]))" "$title"),
+              "head": {"ref": "$HEAD_BRANCH", "sha": "$HEAD_SHA"},
+              "base": {"ref": "$base"},
+              "changed_files": $changed,
+              "additions": $adds,
+              "deletions": $dels
+            },
+            "repository": {
+              "name": "${{ github.event.repository.name }}",
+              "owner": {"login": "${{ github.event.repository.owner.login }}"}
+            }
+          }
+          JSON
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run PR agent (aggregated verdict)
+        if: steps.payload.outputs.skip != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_EVENT_PATH: ${{ github.workspace }}/.synthetic_event.json
+        run: python -m pragent.run --config pragent.yml
+
+  # --------- Multi-repo sweep (unchanged) --------------------------------
+  sweep:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install pyyaml
+      - name: Run multi-repo sweep
+        env:
+          GITHUB_TOKEN: ${{ secrets.PR_AGENT_PAT }}
+        run: python -m pragent.run --config pragent.yml --sweep

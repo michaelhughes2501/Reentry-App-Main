@@ -1,0 +1,63 @@
+name: Dependency & Health Check
+
+# The realistic version of "around the clock": a scheduled scan plus a check on
+# every PR that touches dependencies. GitHub Actions cron is the right tool here
+# because this work is periodic, not continuous.
+#
+# WIRING WITH AGENT 4 (build-production):
+#   On dependency-touching PRs we ALSO call the build workflow so a dep bump
+#   can't merge without proving it still builds. The two reports (this one and
+#   the build agent's) both land in `agent-reports/` and Agent 5 aggregates
+#   them into a single PR verdict.
+on:
+  schedule:
+    - cron: "0 */6 * * *"     # every 6 hours
+  pull_request:
+    paths:
+      - "**/requirements.txt"
+      - "**/pyproject.toml"
+      - "**/package.json"
+      - "**/package-lock.json"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pull-requests: write        # so the report can surface on PRs via the coordinator
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install
+        run: pip install pyyaml packaging
+
+      - name: Run dependency scan
+        run: python -m depagent.run --path . --config depagent.yml
+
+      # The scan writes agent-reports/dependency-agent.json. Upload it so the
+      # PR coordinator (Agent 5) can download and aggregate it into its verdict.
+      # NOTE: The artifact name MUST match what the build agent uses, so all
+      # agents' reports merge into one artifact for Agent 5.
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-reports-deps
+          path: agent-reports/
+          if-no-files-found: ignore
+
+  # On a dependency-touching PR, also run the full build against the new
+  # versions. This is the safety net that makes dependency bumps safe: if a
+  # bump breaks the build, the PR verdict reflects that.
+  verify-build:
+    if: github.event_name == 'pull_request'
+    needs: scan
+    uses: ./.github/workflows/build-production.yml
+    # Inherit the calling workflow's GITHUB_TOKEN; no extra secrets needed
+    # because everything happens within the same repo.

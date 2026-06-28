@@ -1,0 +1,12 @@
+# Dependency agent config (stack: node)
+manifests:
+  - "**/requirements.txt"
+  - "**/pyproject.toml"
+  - "**/package.json"
+  - "**/package-lock.json"
+fail_on: high
+fail_on_outdated: false
+auto_bump:
+  enabled: false
+  allow_major: false
+  max_open_prs: 5
