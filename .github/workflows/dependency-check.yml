@@ -46,7 +46,7 @@ jobs:
       # agents' reports merge into one artifact for Agent 5.
       - name: Upload report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: agent-reports-deps
           path: agent-reports/
