@@ -61,7 +61,7 @@ jobs:
       # agent-reports-build, agent-reports-validate, etc.); the `pattern` option
       # downloads them all and `merge-multiple` flattens them into one directory.
       - name: Download sibling reports
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: agent-reports-*
           merge-multiple: true
