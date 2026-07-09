@@ -38,7 +38,7 @@ jobs:
         run: python -m buildagent.run --path . --no-build
       - name: Upload validation report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: agent-reports-validate
           path: agent-reports/
@@ -109,7 +109,7 @@ jobs:
         run: python -m buildagent.run --path . --build
       - name: Upload build report + artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           # Unique artifact name per job (GitHub Actions v4 forbids name collisions
           # within one workflow). Agent 5 downloads with a pattern to grab them all.
