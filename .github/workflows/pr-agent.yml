@@ -77,6 +77,9 @@ jobs:
         env:
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          REPO_NAME: ${{ github.event.repository.name }}
+          REPO_OWNER_LOGIN: ${{ github.event.repository.owner.login }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           # Find the open PR whose head SHA matches the workflow_run.
@@ -105,14 +108,12 @@ jobs:
               "deletions": $dels
             },
             "repository": {
-              "name": "${{ github.event.repository.name }}",
-              "owner": {"login": "${{ github.event.repository.owner.login }}"}
+              "name": "$REPO_NAME",
+              "owner": {"login": "$REPO_OWNER_LOGIN"}
             }
           }
           JSON
           echo "skip=false" >> "$GITHUB_OUTPUT"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run PR agent (aggregated verdict)
         if: steps.payload.outputs.skip != 'true'
