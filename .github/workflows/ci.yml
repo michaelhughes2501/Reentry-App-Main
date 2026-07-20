@@ -4,8 +4,10 @@ name: CI
 # TypeScript and no build step, so the gate is: does every source file parse,
 # and does the node:test suite pass.
 #
-# Uses `npm install` rather than `npm ci`: this repo has no committed
-# package-lock.json (npm workspace member locally, standalone repo on GitHub).
+# Uses `npm ci` against the committed package-lock.json that Dependabot
+# maintains on this repo. (Locally this folder is an npm workspace member where
+# the 1main root lock is authoritative, but on GitHub it is a standalone repo
+# and the per-repo lock is what Dependabot updates.)
 #
 # The `verify` job is the one to mark as a required status check.
 on:
@@ -32,14 +34,14 @@ jobs:
       NODE_ENV: development
       CI: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
 
       - name: Install dependencies
-        run: npm install --include=dev
+        run: npm ci --include=dev
 
       # Cheap parse gate: catches syntax errors even in files no test imports.
       - name: Syntax check all source files

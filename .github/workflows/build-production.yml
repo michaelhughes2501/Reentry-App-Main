@@ -20,11 +20,11 @@ jobs:
     # Fast pass on every PR — config validity, declared entries exist, scripts present.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "20"
       - name: Install agent deps
@@ -38,7 +38,7 @@ jobs:
         run: python -m buildagent.run --path . --no-build
       - name: Upload validation report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: agent-reports-validate
           path: agent-reports/
@@ -53,7 +53,7 @@ jobs:
     outputs:
       run: ${{ steps.decide.outputs.run }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 2     # need previous SHA to diff PRs
       - id: decide
@@ -91,11 +91,11 @@ jobs:
     if: needs.should-build.outputs.run == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "20"
           cache: npm
@@ -109,7 +109,7 @@ jobs:
         run: python -m buildagent.run --path . --build
       - name: Upload build report + artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           # Unique artifact name per job (GitHub Actions v4 forbids name collisions
           # within one workflow). Agent 5 downloads with a pattern to grab them all.
