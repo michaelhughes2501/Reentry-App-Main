@@ -166,7 +166,17 @@
     .stats { grid-template-columns: 1fr; }
     .features { grid-template-columns: 1fr; }
     .hero h1 { font-size: 2rem; }
-    #nav-tabs { display: none; }
+    #nav { padding: 0.6rem 1rem; }
+    #nav-tabs {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      width: 100%;
+      order: 3;
+    }
+    #nav-tabs::-webkit-scrollbar { display: none; }
+    .nav-tab { flex: 0 0 auto; white-space: nowrap; }
     .page { padding: 1rem; }
     .profile-stats { grid-template-columns: repeat(2, 1fr); }
   }
