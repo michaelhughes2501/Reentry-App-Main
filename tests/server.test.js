@@ -98,3 +98,50 @@ test('unknown /api route returns JSON 404, not the SPA shell', async () => {
   assert.equal(res.status, 404);
   assert.match(res.headers.get('content-type') || '', /application\/json/);
 });
+
+test('POST /api/jobs requires authentication', async () => {
+  const res = await fetch(`${base}/api/jobs`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ title: 'Test Job', company: 'TestCo' }),
+  });
+  assert.equal(res.status, 401);
+});
+
+test('POST /api/housing requires authentication', async () => {
+  const res = await fetch(`${base}/api/housing`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ title: 'Test Place' }),
+  });
+  assert.equal(res.status, 401);
+});
+
+test('register rejects short passwords', async () => {
+  const res = await fetch(`${base}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Short', email: 'short@example.com', password: '1234' }),
+  });
+  assert.equal(res.status, 400);
+  const body = await res.json();
+  assert.match(body.error, /Password/);
+});
+
+test('register rejects invalid email format', async () => {
+  const res = await fetch(`${base}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Bad Email', email: 'not-an-email', password: 'validpass123' }),
+  });
+  assert.equal(res.status, 400);
+  const body = await res.json();
+  assert.match(body.error, /email/i);
+});
+
+test('GET /api/jobs supports pagination', async () => {
+  const res = await fetch(`${base}/api/jobs?page=1&limit=10`);
+  assert.equal(res.status, 200);
+  const rows = await res.json();
+  assert.ok(Array.isArray(rows));
+});
