@@ -6,7 +6,7 @@ A web app supporting reentry into the community after incarceration.
 
 ```bash
 npm install
-npm start          # http://localhost:3000
+npm start          # http://localhost:3001
 ```
 
 Open in VS Code and press **F5** to run with the debugger attached.
