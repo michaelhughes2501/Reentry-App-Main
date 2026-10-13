@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build:
@@ -9,10 +7,12 @@ services:
     ports:
       - "3000:3000"
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       PORT: 3000
+      JWT_SECRET: local-reentry-development-secret
+      DB_PATH: /app/data/reentry.db
     volumes:
-      - ./:/app
-      - /app/node_modules
-    command: npm run dev
+      - reentry_data:/app/data
     restart: unless-stopped
+volumes:
+  reentry_data:
