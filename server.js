@@ -4,6 +4,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
+import crypto from 'crypto';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { fileURLToPath, pathToFileURL } from 'url';
@@ -28,7 +30,33 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(helmet());
+// public/index.html ships its SPA logic as one inline <script> plus inline
+// on*="" handler attributes. Helmet's default CSP (script-src 'self',
+// script-src-attr 'none') blocks both, which left the whole UI dead in the
+// browser. Allow exactly that inline <script> by its SHA-256 hash (computed
+// at boot, so it tracks edits to index.html) and allow handler attributes.
+// Arbitrary injected <script> blocks stay blocked. Long-term: move the script
+// to public/app.js with addEventListener and drop both exceptions.
+function inlineScriptHashes(htmlPath) {
+  try {
+    const html = fs.readFileSync(htmlPath, 'utf8');
+    return [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(
+      (m) => `'sha256-${crypto.createHash('sha256').update(m[1], 'utf8').digest('base64')}'`
+    );
+  } catch {
+    return [];
+  }
+}
+const scriptHashes = inlineScriptHashes(path.join(__dirname, 'public', 'index.html'));
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      scriptSrc: ["'self'", ...scriptHashes],
+      scriptSrcAttr: ["'unsafe-inline'"],
+    },
+  },
+}));
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100 // limit each IP to 100 requests per windowMs

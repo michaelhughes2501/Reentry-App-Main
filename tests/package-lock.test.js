@@ -1,8 +1,6 @@
-// Regression tests for the package-lock.json changes in this PR:
-// an `npm audit fix` bump of the transitive `body-parser` dependency
-// from 2.2.2 -> 2.3.0 (low severity DoS advisory GHSA-v422-hmwv-36x6),
-// which also pulled a pinned `content-type@2.0.0` in as body-parser's
-// own nested dependency.
+// Regression tests for package-lock.json: it must parse (a bad merge once
+// left it as invalid JSON, breaking `npm ci`), and security-relevant
+// transitive deps must stay at or above their patched versions.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -21,31 +19,38 @@ test('package-lock.json is valid, parseable JSON', () => {
   assert.doesNotThrow(() => loadLockfile());
 });
 
-test('body-parser is bumped to 2.3.0 to resolve GHSA-v422-hmwv-36x6', () => {
+// Compare dotted numeric versions: returns true when a >= b.
+function versionAtLeast(a, b) {
+  const pa = a.split('.').map(Number);
+  const pb = b.split('.').map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = pa[i] || 0;
+    const y = pb[i] || 0;
+    if (x !== y) return x > y;
+  }
+  return true;
+}
+
+// Assert minimum patched versions rather than exact pins, so routine
+// `npm update` / Dependabot bumps don't break the suite.
+test('body-parser is at least 2.4.0 (GHSA-v422-hmwv-36x6, GHSA-27r3-jxmh-p828)', () => {
   const lock = loadLockfile();
   const bodyParser = lock.packages['node_modules/body-parser'];
   assert.ok(bodyParser, 'expected node_modules/body-parser entry in the lockfile');
-  assert.equal(bodyParser.version, '2.3.0');
-  assert.equal(bodyParser.resolved, 'https://registry.npmjs.org/body-parser/-/body-parser-2.3.0.tgz');
+  assert.ok(versionAtLeast(bodyParser.version, '2.4.0'), `body-parser ${bodyParser.version} < 2.4.0`);
 });
 
-test('body-parser declares its updated transitive dependency ranges', () => {
+test('proxy-addr is at least 2.0.8 (GHSA-jqcg-44mw-7w3h)', () => {
   const lock = loadLockfile();
-  const bodyParser = lock.packages['node_modules/body-parser'];
-  assert.equal(bodyParser.dependencies['content-type'], '^2.0.0');
-  assert.equal(bodyParser.dependencies['http-errors'], '^2.0.1');
-  assert.equal(bodyParser.dependencies['iconv-lite'], '^0.7.2');
-  assert.equal(bodyParser.dependencies['qs'], '^6.15.2');
-  assert.equal(bodyParser.dependencies['raw-body'], '^3.0.2');
-  assert.equal(bodyParser.dependencies['type-is'], '^2.1.0');
+  const proxyAddr = lock.packages['node_modules/proxy-addr'];
+  assert.ok(proxyAddr, 'expected node_modules/proxy-addr entry in the lockfile');
+  assert.ok(versionAtLeast(proxyAddr.version, '2.0.8'), `proxy-addr ${proxyAddr.version} < 2.0.8`);
 });
 
-test('body-parser gets its own nested content-type@2.0.0 (diverges from any other content-type in the tree)', () => {
-  const lock = loadLockfile();
-  const nestedContentType = lock.packages['node_modules/body-parser/node_modules/content-type'];
-  assert.ok(nestedContentType, 'expected a nested content-type dependency scoped under body-parser');
-  assert.equal(nestedContentType.version, '2.0.0');
-  assert.equal(nestedContentType.resolved, 'https://registry.npmjs.org/content-type/-/content-type-2.0.0.tgz');
+test('lockfile has no duplicate or dangling package keys from bad merges', () => {
+  const raw = fs.readFileSync(lockPath, 'utf8');
+  const keys = [...raw.matchAll(/^    "(node_modules\/[^"]+)": \{$/gm)].map((m) => m[1]);
+  assert.equal(new Set(keys).size, keys.length, 'duplicate package entries in package-lock.json');
 });
 
 test('lockfile root project metadata matches package.json', () => {

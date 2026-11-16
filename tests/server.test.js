@@ -145,3 +145,20 @@ test('GET /api/jobs supports pagination', async () => {
   const rows = await res.json();
   assert.ok(Array.isArray(rows));
 });
+
+test('CSP allows the SPA inline script by hash (helmet default blocked it)', async () => {
+  const fs = await import('node:fs');
+  const crypto = await import('node:crypto');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const html = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'index.html'), 'utf8');
+  const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].pop()[1];
+  const hash = crypto.createHash('sha256').update(script, 'utf8').digest('base64');
+
+  const res = await fetch(`${base}/`);
+  const csp = res.headers.get('content-security-policy');
+  assert.ok(csp, 'expected a Content-Security-Policy header');
+  const scriptSrc = csp.split(';').map((d) => d.trim()).find((d) => d.startsWith('script-src '));
+  assert.ok(scriptSrc.includes(`'sha256-${hash}'`), `script-src should include the inline script hash, got: ${scriptSrc}`);
+  assert.ok(!scriptSrc.includes("'unsafe-inline'"), 'script-src must not allow arbitrary inline <script> blocks');
+});
