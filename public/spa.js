@@ -175,7 +175,7 @@ function renderResources() {
       </div>
       <div class="card-meta">${r.city?'&#128205; '+esc(r.city):''}${r.phone?' | &#128222; '+esc(r.phone):''}</div>
       <div class="card-desc">${esc(r.description)}</div>
-      ${r.website?`<a href="${esc(r.website)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:0.75rem;font-size:0.8rem;color:var(--accent);">Visit Website &#8599;</a>`:''}
+      ${safeUrl(r.website)?`<a href="${esc(safeUrl(r.website))}" target="_blank" rel="noopener" style="display:inline-block;margin-top:0.75rem;font-size:0.8rem;color:var(--accent);">Visit Website &#8599;</a>`:''}
     </div>`).join('') + '</div>';
 }
 
@@ -302,7 +302,7 @@ async function loadCommunity() {
   document.getElementById('community-list').innerHTML = posts.map(p => `
     <div class="post-card">
       <div class="post-header">
-        <div class="post-avatar">${(p.username||'A').charAt(0).toUpperCase()}</div>
+        <div class="post-avatar">${esc((p.username||'A').charAt(0).toUpperCase())}</div>
         <div>
           <div class="post-author">${esc(p.username||'Anonymous')}</div>
           <div class="post-time">${timeAgo(p.created_at)}</div>
@@ -409,6 +409,13 @@ function updateProfilePage() {
 }
 
 // ==================== UTILS ====================
+// Only allow http(s) links in rendered hrefs; anything else (javascript:,
+// data:, etc.) is dropped so a stored URL can't become script.
+function safeUrl(url) {
+  const s = String(url || '').trim();
+  return /^https?:\/\/[^\s]+$/i.test(s) ? s : '';
+}
+
 function esc(str) {
   if (!str) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');

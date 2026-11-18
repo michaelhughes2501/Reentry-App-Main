@@ -137,6 +137,17 @@ test('esc() returns an empty string for falsy input', () => {
 
 // ---- timeAgo() ---------------------------------------------------------------
 
+test('safeUrl() keeps http(s) links and drops script/data URLs', () => {
+  const { ctx } = loadApp();
+  assert.equal(ctx.safeUrl('https://example.org/help'), 'https://example.org/help');
+  assert.equal(ctx.safeUrl('  http://example.org  '), 'http://example.org');
+  assert.equal(ctx.safeUrl('javascript:alert(1)'), '');
+  assert.equal(ctx.safeUrl('JaVaScRiPt:alert(1)'), '');
+  assert.equal(ctx.safeUrl('data:text/html,<script>alert(1)</script>'), '');
+  assert.equal(ctx.safeUrl('/relative/path'), '');
+  assert.equal(ctx.safeUrl(''), '');
+});
+
 test('timeAgo() buckets recent timestamps into minutes/hours/days', () => {
   const { ctx } = loadApp();
   const now = Date.now();
