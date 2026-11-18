@@ -409,11 +409,15 @@ function updateProfilePage() {
 }
 
 // ==================== UTILS ====================
-// Only allow http(s) links in rendered hrefs; anything else (javascript:,
-// data:, etc.) is dropped so a stored URL can't become script.
+// Only allow http(s) links in rendered hrefs. Bare domains such as
+// "reentrycouncil.org" (how the server seeds resources) get https://;
+// any other scheme (javascript:, data:, ...) is dropped so a stored URL
+// can't become script.
 function safeUrl(url) {
   const s = String(url || '').trim();
-  return /^https?:\/\/[^\s]+$/i.test(s) ? s : '';
+  if (/^https?:\/\/[^\s]+$/i.test(s)) return s;
+  if (/^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}(\/[^\s]*)?$/i.test(s)) return 'https://' + s;
+  return '';
 }
 
 function esc(str) {

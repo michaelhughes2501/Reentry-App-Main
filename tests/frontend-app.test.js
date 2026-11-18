@@ -144,7 +144,10 @@ test('safeUrl() keeps http(s) links and drops script/data URLs', () => {
   assert.equal(ctx.safeUrl('javascript:alert(1)'), '');
   assert.equal(ctx.safeUrl('JaVaScRiPt:alert(1)'), '');
   assert.equal(ctx.safeUrl('data:text/html,<script>alert(1)</script>'), '');
+  assert.equal(ctx.safeUrl('reentrycouncil.org'), 'https://reentrycouncil.org');
+  assert.equal(ctx.safeUrl('example.org/help?x=1'), 'https://example.org/help?x=1');
   assert.equal(ctx.safeUrl('/relative/path'), '');
+  assert.equal(ctx.safeUrl('javascript.org:alert(1)'), '');
   assert.equal(ctx.safeUrl(''), '');
 });
 
