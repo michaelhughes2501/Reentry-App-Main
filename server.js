@@ -28,6 +28,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// Helmet's default CSP (script-src 'self', script-src-attr 'none') applies
+// unchanged: the SPA script lives in public/spa.js and binds its handlers with
+// addEventListener, so no inline <script> or on*="" attributes are needed.
 app.use(helmet());
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes

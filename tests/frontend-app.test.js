@@ -1,4 +1,4 @@
-// Unit tests for the inline SPA script embedded in public/index.html.
+// Unit tests for the SPA script (public/spa.js, loaded by public/index.html).
 //
 // This PR replaced a duplicated/malformed public/index.html (which had
 // dragged in an unrelated "New Horizon" marketing page plus its
@@ -13,10 +13,10 @@
 //     auth attempt against the real backend failed.
 //
 // There's no bundler/module boundary for this code — it's a single
-// <script> block designed to run directly in a browser. To unit test it
+// classic script designed to run directly in a browser. To unit test it
 // without pulling in a DOM library (this repo intentionally uses only
-// Node's built-in test runner, see tests/server.test.js), we extract the
-// inline script text and execute it inside a `vm` context wired up with
+// Node's built-in test runner, see tests/server.test.js), we read the
+// script text and execute it inside a `vm` context wired up with
 // minimal fakes for `document`, `localStorage`, and `fetch`. This lets us
 // call the script's top-level functions directly and assert on their
 // real behavior instead of re-implementing/guessing at it.
@@ -32,14 +32,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const indexHtmlPath = path.join(__dirname, '..', 'public', 'index.html');
 const html = fs.readFileSync(indexHtmlPath, 'utf8');
 
-function extractInlineScript(htmlSource) {
-  const matches = [...htmlSource.matchAll(/<script>([\s\S]*?)<\/script>/g)];
-  assert.ok(matches.length > 0, 'expected at least one inline <script> block in public/index.html');
-  // The app logic lives in the last (and, post-fix, only) inline script block.
-  return matches[matches.length - 1][1];
-}
-
-const scriptSource = extractInlineScript(html);
+// The SPA logic lives in public/spa.js (moved out of an inline <script> so the
+// page runs under helmet's default CSP). index.html must load it.
+assert.match(html, /<script src="\/spa\.js"><\/script>/, 'index.html should load /spa.js');
+const scriptSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'spa.js'), 'utf8');
 
 // ---- Minimal DOM/browser fakes -------------------------------------------
 
@@ -118,7 +114,7 @@ function loadApp({ fetchImpl } = {}) {
     Math,
   };
   vm.createContext(sandbox);
-  vm.runInContext(scriptSource, sandbox, { filename: 'public/index.html (inline script)' });
+  vm.runInContext(scriptSource, sandbox, { filename: 'public/spa.js' });
 
   return { ctx: sandbox, fetchCalls, localStorage, el: getElementById };
 }
@@ -140,6 +136,20 @@ test('esc() returns an empty string for falsy input', () => {
 });
 
 // ---- timeAgo() ---------------------------------------------------------------
+
+test('safeUrl() keeps http(s) links and drops script/data URLs', () => {
+  const { ctx } = loadApp();
+  assert.equal(ctx.safeUrl('https://example.org/help'), 'https://example.org/help');
+  assert.equal(ctx.safeUrl('  http://example.org  '), 'http://example.org');
+  assert.equal(ctx.safeUrl('javascript:alert(1)'), '');
+  assert.equal(ctx.safeUrl('JaVaScRiPt:alert(1)'), '');
+  assert.equal(ctx.safeUrl('data:text/html,<script>alert(1)</script>'), '');
+  assert.equal(ctx.safeUrl('reentrycouncil.org'), 'https://reentrycouncil.org');
+  assert.equal(ctx.safeUrl('example.org/help?x=1'), 'https://example.org/help?x=1');
+  assert.equal(ctx.safeUrl('/relative/path'), '');
+  assert.equal(ctx.safeUrl('javascript.org:alert(1)'), '');
+  assert.equal(ctx.safeUrl(''), '');
+});
 
 test('timeAgo() buckets recent timestamps into minutes/hours/days', () => {
   const { ctx } = loadApp();

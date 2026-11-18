@@ -145,3 +145,26 @@ test('GET /api/jobs supports pagination', async () => {
   const rows = await res.json();
   assert.ok(Array.isArray(rows));
 });
+
+test('SPA runs under helmet default CSP: no inline scripts or handlers', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const html = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'index.html'), 'utf8');
+  // Any inline <script> body or on*="" attribute would be blocked by the CSP below.
+  assert.ok(!/<script\b(?![^>]*\bsrc\s*=)[^>]*>[\s\S]*?\S[\s\S]*?<\/script>/i.test(html), 'index.html must not contain inline <script> blocks');
+  assert.ok(!/\son[a-z]+\s*=/i.test(html), 'index.html must not use inline on*="" event handlers');
+
+  const res = await fetch(`${base}/`);
+  const csp = res.headers.get('content-security-policy');
+  assert.ok(csp, 'expected a Content-Security-Policy header');
+  const directives = csp.split(';').map((d) => d.trim());
+  const scriptSrc = directives.find((d) => d.startsWith('script-src '));
+  const scriptSrcAttr = directives.find((d) => d.startsWith('script-src-attr '));
+  assert.equal(scriptSrc, "script-src 'self'");
+  assert.equal(scriptSrcAttr, "script-src-attr 'none'");
+
+  const js = await fetch(`${base}/spa.js`);
+  assert.equal(js.status, 200);
+  assert.match(js.headers.get('content-type') || '', /javascript/);
+});
