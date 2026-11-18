@@ -15,3 +15,7 @@ build/
 
 #Ignore vscode AI rules
 .github\instructions\codacy.instructions.md
+
+# Local secrets
+gateway.json
+data/gateway.json
