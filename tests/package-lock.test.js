@@ -19,17 +19,26 @@ test('package-lock.json is valid, parseable JSON', () => {
   assert.doesNotThrow(() => loadLockfile());
 });
 
-// Compare dotted numeric versions: returns true when a >= b.
+// Semver "a >= b" for MAJOR.MINOR.PATCH. A prerelease of the threshold
+// (e.g. 2.4.0-beta.1 vs 2.4.0) does not count as patched.
 function versionAtLeast(a, b) {
-  const pa = a.split('.').map(Number);
+  const m = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+.*)?$/.exec(a);
   const pb = b.split('.').map(Number);
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const x = pa[i] || 0;
-    const y = pb[i] || 0;
-    if (x !== y) return x > y;
+  if (!m || pb.length !== 3 || pb.some(Number.isNaN)) return false;
+  const pa = m.slice(1, 4).map(Number);
+  for (let i = 0; i < 3; i++) {
+    if (pa[i] !== pb[i]) return pa[i] > pb[i];
   }
-  return true;
+  return !m[4];
 }
+
+test('versionAtLeast treats prereleases of the threshold as unpatched', () => {
+  assert.equal(versionAtLeast('2.4.0', '2.4.0'), true);
+  assert.equal(versionAtLeast('2.4.1', '2.4.0'), true);
+  assert.equal(versionAtLeast('2.3.9', '2.4.0'), false);
+  assert.equal(versionAtLeast('2.4.0-beta.1', '2.4.0'), false);
+  assert.equal(versionAtLeast('2.4.1-beta.1', '2.4.0'), true);
+});
 
 // Assert minimum patched versions rather than exact pins, so routine
 // `npm update` / Dependabot bumps don't break the suite.
