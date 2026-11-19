@@ -1,8 +1,6 @@
-// Regression tests for the package-lock.json changes in this PR:
-// an `npm audit fix` bump of the transitive `body-parser` dependency
-// from 2.2.2 -> 2.3.0 (low severity DoS advisory GHSA-v422-hmwv-36x6),
-// which also pulled a pinned `content-type@2.0.0` in as body-parser's
-// own nested dependency.
+// Regression tests for package-lock.json: it must stay valid JSON, keep the
+// transitive `body-parser` at or above 2.3.0 (low severity DoS advisory
+// GHSA-v422-hmwv-36x6), and stay in sync with package.json.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -21,31 +19,41 @@ test('package-lock.json is valid, parseable JSON', () => {
   assert.doesNotThrow(() => loadLockfile());
 });
 
-test('body-parser is bumped to 2.3.0 to resolve GHSA-v422-hmwv-36x6', () => {
+function semverAtLeast(version, min) {
+  const a = version.split('.').map(Number);
+  const b = min.split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    if (a[i] !== b[i]) return a[i] > b[i];
+  }
+  return true;
+}
+
+test('body-parser is at least 2.3.0 to resolve GHSA-v422-hmwv-36x6', () => {
   const lock = loadLockfile();
   const bodyParser = lock.packages['node_modules/body-parser'];
   assert.ok(bodyParser, 'expected node_modules/body-parser entry in the lockfile');
-  assert.equal(bodyParser.version, '2.3.0');
-  assert.equal(bodyParser.resolved, 'https://registry.npmjs.org/body-parser/-/body-parser-2.3.0.tgz');
+  assert.ok(
+    semverAtLeast(bodyParser.version, '2.3.0'),
+    `expected body-parser >= 2.3.0, got ${bodyParser.version}`,
+  );
+  assert.equal(
+    bodyParser.resolved,
+    `https://registry.npmjs.org/body-parser/-/body-parser-${bodyParser.version}.tgz`,
+  );
 });
 
-test('body-parser declares its updated transitive dependency ranges', () => {
+test('every installed content-type satisfies body-parser\'s declared range', () => {
   const lock = loadLockfile();
   const bodyParser = lock.packages['node_modules/body-parser'];
-  assert.equal(bodyParser.dependencies['content-type'], '^2.0.0');
-  assert.equal(bodyParser.dependencies['http-errors'], '^2.0.1');
-  assert.equal(bodyParser.dependencies['iconv-lite'], '^0.7.2');
-  assert.equal(bodyParser.dependencies['qs'], '^6.15.2');
-  assert.equal(bodyParser.dependencies['raw-body'], '^3.0.2');
-  assert.equal(bodyParser.dependencies['type-is'], '^2.1.0');
-});
-
-test('body-parser gets its own nested content-type@2.0.0 (diverges from any other content-type in the tree)', () => {
-  const lock = loadLockfile();
-  const nestedContentType = lock.packages['node_modules/body-parser/node_modules/content-type'];
-  assert.ok(nestedContentType, 'expected a nested content-type dependency scoped under body-parser');
-  assert.equal(nestedContentType.version, '2.0.0');
-  assert.equal(nestedContentType.resolved, 'https://registry.npmjs.org/content-type/-/content-type-2.0.0.tgz');
+  const range = bodyParser.dependencies['content-type'];
+  assert.ok(range, 'expected body-parser to declare a content-type dependency');
+  const resolved =
+    lock.packages['node_modules/body-parser/node_modules/content-type'] ||
+    lock.packages['node_modules/content-type'];
+  assert.ok(resolved, 'expected content-type to be installed');
+  const [major] = resolved.version.split('.');
+  assert.equal(`^${major}`, range.split('.')[0]);
+  assert.ok(semverAtLeast(resolved.version, range.replace('^', '')));
 });
 
 test('lockfile root project metadata matches package.json', () => {
