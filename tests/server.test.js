@@ -145,3 +145,21 @@ test('GET /api/jobs supports pagination', async () => {
   const rows = await res.json();
   assert.ok(Array.isArray(rows));
 });
+
+test('CSP allows exactly the inline script/handlers shipped in index.html (by hash)', async () => {
+  const { createHash } = await import('node:crypto');
+  const { readFileSync } = await import('node:fs');
+  const html = readFileSync(new URL('../public/index.html', import.meta.url), 'utf8');
+  const sha = (code) => `'sha256-${createHash('sha256').update(code, 'utf8').digest('base64')}'`;
+
+  const res = await fetch(`${base}/`);
+  assert.equal(res.status, 200);
+  const csp = res.headers.get('content-security-policy');
+  assert.ok(csp, 'expected a Content-Security-Policy header');
+  const scriptDirectives = csp.split(';').filter((d) => d.trim().startsWith('script-src'));
+  for (const d of scriptDirectives) assert.doesNotMatch(d, /'unsafe-inline'/, `blanket unsafe-inline in: ${d}`);
+
+  const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  assert.ok(csp.includes(sha(script)), 'inline <script> hash missing from script-src');
+  assert.ok(csp.includes(sha("showTab('home')")), 'inline handler hash missing from script-src-attr');
+});

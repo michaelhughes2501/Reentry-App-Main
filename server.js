@@ -4,6 +4,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
+import crypto from 'crypto';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { fileURLToPath, pathToFileURL } from 'url';
@@ -28,7 +30,28 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(helmet());
+// The SPA in public/index.html uses one inline <script> block and inline
+// on*="..." handlers. helmet's default CSP (script-src 'self';
+// script-src-attr 'none') blocks all of them, leaving the page inert. Rather
+// than allowing arbitrary inline script, allow exactly the inline code that
+// ships in index.html by hash, computed at startup so it never goes stale.
+function inlineCodeHashes(htmlSource) {
+  const sha = (code) => `'sha256-${crypto.createHash('sha256').update(code, 'utf8').digest('base64')}'`;
+  const scripts = [...htmlSource.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => sha(m[1]));
+  const handlers = [...new Set([...htmlSource.matchAll(/\son[a-z]+="([^"]*)"/g)].map((m) => m[1]))].map(sha);
+  return { scripts, handlers };
+}
+const indexHtml = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
+const inlineHashes = inlineCodeHashes(indexHtml);
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      scriptSrc: ["'self'", ...inlineHashes.scripts],
+      scriptSrcAttr: ["'unsafe-hashes'", ...inlineHashes.handlers],
+    },
+  },
+}));
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100 // limit each IP to 100 requests per windowMs

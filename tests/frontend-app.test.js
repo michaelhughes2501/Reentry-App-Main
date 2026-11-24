@@ -335,3 +335,15 @@ test('doRegister() requires name, email, and password', async () => {
   assert.equal(fetchCalls.filter((c) => c.url === '/api/auth/register').length, 0);
   assert.equal(el('toast').textContent, 'Name, email, and password required');
 });
+
+// ---- safeUrl() ---------------------------------------------------------------
+
+test('safeUrl() keeps http(s) links, prefixes bare hosts, and drops other schemes', () => {
+  const { ctx } = loadApp();
+  assert.equal(ctx.safeUrl('https://example.org/a'), 'https://example.org/a');
+  assert.equal(ctx.safeUrl('reentrycouncil.org'), 'https://reentrycouncil.org');
+  assert.equal(ctx.safeUrl('javascript:alert(1)'), '');
+  assert.equal(ctx.safeUrl(' JavaScript:alert(1)'), '');
+  assert.equal(ctx.safeUrl('data:text/html,<b>x</b>'), '');
+  assert.equal(ctx.safeUrl(''), '');
+});
